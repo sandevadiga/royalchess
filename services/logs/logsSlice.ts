@@ -29,17 +29,26 @@ const logsSlice = createSlice({
   initialState,
   reducers: {
     addLog: (state, action: PayloadAction<Omit<LogEntry, 'id' | 'timestamp'>>) => {
-      const entry: LogEntry = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        ...action.payload,
-      };
-      
-      state.entries.unshift(entry);
-      
-      // Keep only max entries
-      if (state.entries.length > state.settings.maxEntries) {
-        state.entries = state.entries.slice(0, state.settings.maxEntries);
+      try {
+        const entry: LogEntry = {
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          ...action.payload,
+        };
+        
+        state.entries.unshift(entry);
+        
+        // Keep only max entries
+        const maxEntries = state.settings.maxEntries || 1000;
+        if (state.entries.length > maxEntries) {
+          state.entries = state.entries.slice(0, maxEntries);
+        }
+      } catch (error) {
+        console.error('Failed to add log entry:', error);
+        // Ensure entries array exists
+        if (!state.entries) {
+          state.entries = [];
+        }
       }
     },
   },

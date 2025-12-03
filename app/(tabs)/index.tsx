@@ -19,8 +19,17 @@ export default function HomeScreen() {
   };
 
   const getDifficultyLabel = () => {
-    const labels = ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'];
-    return labels[difficulty - 1];
+    try {
+      const labels = ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'];
+      const index = difficulty - 1;
+      if (index >= 0 && index < labels.length) {
+        return labels[index];
+      }
+      return 'Medium'; // Default fallback
+    } catch (error) {
+      console.warn('Error getting difficulty label:', error);
+      return 'Medium';
+    }
   };
 
   return (

@@ -5,11 +5,17 @@ import Chessboard from 'react-native-chessboard';
 import { useLocalSearchParams } from 'expo-router';
 
 export default function ChessGameScreen() {
-  const { color, difficulty } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const color = params.color || 'white';
+  const difficulty = params.difficulty || '3';
+  
+  // Validate parameters
+  const validColor = ['white', 'black'].includes(color as string) ? color : 'white';
+  const validDifficulty = Math.max(1, Math.min(5, Number(difficulty) || 3));
   const [game] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
   const [playerRating, setPlayerRating] = useState(1200);
-  const [computerRating] = useState(1000 + (Number(difficulty) - 1) * 200);
+  const [computerRating] = useState(1000 + (validDifficulty - 1) * 200);
 
   const onMove = (moveData: any) => {
     try {
@@ -24,17 +30,17 @@ export default function ChessGameScreen() {
 
   const getDifficultyLabel = () => {
     const labels = ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'];
-    return labels[Number(difficulty) - 1] || 'Medium';
+    return labels[validDifficulty - 1] || 'Medium';
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Chess Game vs Computer</Text>
-      <Text style={styles.gameInfo}>Playing as {color} • {getDifficultyLabel()}</Text>
+      <Text style={styles.gameInfo}>Playing as {validColor} • {getDifficultyLabel()}</Text>
       
       <View style={styles.ratingContainer}>
         <View style={styles.playerRating}>
-          <Text style={styles.ratingLabel}>You ({color})</Text>
+          <Text style={styles.ratingLabel}>You ({validColor})</Text>
           <Text style={styles.ratingValue}>{playerRating}</Text>
         </View>
         <Text style={styles.vs}>VS</Text>

@@ -26,7 +26,18 @@ export default function ProfileScreen() {
       
       <View style={styles.profileCard}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{user.profile.name.charAt(0).toUpperCase()}</Text>
+          <Text style={styles.avatarText}>
+            {(() => {
+              try {
+                return user.profile.name && user.profile.name.length > 0 
+                  ? user.profile.name.charAt(0).toUpperCase() 
+                  : 'A';
+              } catch (error) {
+                console.warn('Error generating avatar text:', error);
+                return 'A';
+              }
+            })()}
+          </Text>
         </View>
         
         <Text style={styles.name}>{user.profile.name}</Text>

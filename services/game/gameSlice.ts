@@ -103,39 +103,93 @@ const gameSlice = createSlice({
       };
     },
     makeMove: (state, action: PayloadAction<Move>) => {
-      state.current.moves.push(action.payload);
-      state.current.turn = state.current.turn === 'white' ? 'black' : 'white';
+      try {
+        // Ensure moves array exists
+        if (!state.current.moves) {
+          state.current.moves = [];
+        }
+        
+        state.current.moves.push(action.payload);
+        state.current.turn = state.current.turn === 'white' ? 'black' : 'white';
+      } catch (error) {
+        console.error('Failed to make move:', error);
+        // Ensure moves array exists even if push fails
+        if (!state.current.moves) {
+          state.current.moves = [];
+        }
+      }
     },
     updateGameState: (state, action: PayloadAction<{ fen: string; pgn: string }>) => {
-      state.current.fen = action.payload.fen;
-      state.current.pgn = action.payload.pgn;
+      try {
+        // Validate payload exists
+        if (!action.payload) {
+          console.warn('Invalid payload for updateGameState');
+          return;
+        }
+        
+        // Update FEN with validation
+        if (typeof action.payload.fen === 'string' && action.payload.fen.trim()) {
+          state.current.fen = action.payload.fen;
+        }
+        
+        // Update PGN with validation
+        if (typeof action.payload.pgn === 'string') {
+          state.current.pgn = action.payload.pgn;
+        }
+      } catch (error) {
+        console.error('Failed to update game state:', error);
+      }
     },
     endGame: (state, action: PayloadAction<{ 
       status: 'checkmate' | 'stalemate' | 'draw' | 'resigned';
       result: 'win' | 'loss' | 'draw';
     }>) => {
-      state.current.status = action.payload.status;
-      
-      // Add to history
-      if (state.current.id) {
-        const gameRecord: GameRecord = {
-          id: state.current.id,
-          date: new Date().toISOString(),
-          opponent: state.current.opponentType === 'computer' ? 'Computer' : 'Human',
-          result: action.payload.result,
-          rating: 1200, // Will be updated from user state
-          ratingChange: 0, // Will be calculated
-          moves: state.current.moves,
-          duration: 0, // Will be calculated
-        };
-        state.history.unshift(gameRecord);
+      try {
+        state.current.status = action.payload.status;
+        
+        // Add to history
+        if (state.current.id) {
+          const gameRecord: GameRecord = {
+            id: state.current.id,
+            date: new Date().toISOString(),
+            opponent: state.current.opponentType === 'computer' ? 'Computer' : 'Human',
+            result: action.payload.result,
+            rating: 1200, // Will be updated from user state
+            ratingChange: 0, // Will be calculated
+            moves: state.current.moves || [],
+            duration: 0, // Will be calculated
+          };
+          
+          // Ensure history array exists
+          if (!state.history) {
+            state.history = [];
+          }
+          
+          state.history.unshift(gameRecord);
+        }
+      } catch (error) {
+        console.error('Failed to end game:', error);
+        // Ensure game status is still updated
+        state.current.status = action.payload.status;
       }
     },
     updateSettings: (state, action: PayloadAction<Partial<GameState['settings']>>) => {
-      state.settings = { ...state.settings, ...action.payload };
+      try {
+        if (action.payload) {
+          state.settings = { ...state.settings, ...action.payload };
+        }
+      } catch (error) {
+        console.error('Failed to update settings:', error);
+      }
     },
     updateAnalysis: (state, action: PayloadAction<Partial<GameState['analysis']>>) => {
-      state.analysis = { ...state.analysis, ...action.payload };
+      try {
+        if (action.payload) {
+          state.analysis = { ...state.analysis, ...action.payload };
+        }
+      } catch (error) {
+        console.error('Failed to update analysis:', error);
+      }
     },
   },
 });
