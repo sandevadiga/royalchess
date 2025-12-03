@@ -46,34 +46,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 20,
-  },
-  playerRating: {
-    alignItems: 'center',
-  },
-  computerRating: {
-    alignItems: 'center',
-  },
-  ratingLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
-  },
-  ratingValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  vs: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#999',
-  },
   boardContainer: {
     flex: 1,
     justifyContent: 'center',
