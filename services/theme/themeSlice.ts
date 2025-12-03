@@ -38,8 +38,11 @@ const themeSlice = createSlice({
     updateCustomization: (state, action: PayloadAction<Partial<ThemeState['customization']>>) => {
       state.customization = { ...state.customization, ...action.payload };
     },
+    toggleTheme: (state) => {
+      state.current.mode = state.current.mode === 'light' ? 'dark' : 'light';
+    },
   },
 });
 
-export const { updateTheme, updateCustomization } = themeSlice.actions;
+export const { updateTheme, updateCustomization, toggleTheme } = themeSlice.actions;
 export default themeSlice.reducer;
