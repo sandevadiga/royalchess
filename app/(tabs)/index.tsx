@@ -7,6 +7,7 @@ export default function HomeScreen() {
   const [showColorModal, setShowColorModal] = useState(false);
   const [difficulty, setDifficulty] = useState(3);
   const [selectedColor, setSelectedColor] = useState('white');
+  const [timeControl, setTimeControl] = useState('blitz');
 
   const handlePlayWithComputer = () => {
     setShowColorModal(true);
@@ -15,7 +16,7 @@ export default function HomeScreen() {
   const startGame = () => {
     setShowColorModal(false);
     const finalColor = selectedColor === 'random' ? (Math.random() > 0.5 ? 'white' : 'black') : selectedColor;
-    router.push(`/chess-game?color=${finalColor}&difficulty=${difficulty}`);
+    router.push(`/chess-game?color=${finalColor}&difficulty=${difficulty}&timeControl=${timeControl}`);
   };
 
   const getDifficultyLabel = () => {
@@ -64,6 +65,41 @@ export default function HomeScreen() {
               >
                 <Text style={[styles.colorOptionText, selectedColor === 'random' && styles.selectedText]}>Random</Text>
               </TouchableOpacity>
+            </View>
+            
+            <View style={styles.timeControlContainer}>
+              <Text style={styles.sectionTitle}>Time Control</Text>
+              <View style={styles.timeRow}>
+                <TouchableOpacity 
+                  style={[styles.timeOption, timeControl === 'blitz' && styles.selectedOption]} 
+                  onPress={() => setTimeControl('blitz')}
+                >
+                  <Text style={[styles.timeOptionText, timeControl === 'blitz' && styles.selectedText]}>Blitz 5min</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.timeOption, timeControl === 'rapid' && styles.selectedOption]} 
+                  onPress={() => setTimeControl('rapid')}
+                >
+                  <Text style={[styles.timeOptionText, timeControl === 'rapid' && styles.selectedText]}>Rapid 10min</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.timeRow}>
+                <TouchableOpacity 
+                  style={[styles.timeOption, timeControl === 'classical' && styles.selectedOption]} 
+                  onPress={() => setTimeControl('classical')}
+                >
+                  <Text style={[styles.timeOptionText, timeControl === 'classical' && styles.selectedText]}>Classical 30min</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.timeOption, timeControl === 'timeless' && styles.selectedOption]} 
+                  onPress={() => setTimeControl('timeless')}
+                >
+                  <Text style={[styles.timeOptionText, timeControl === 'timeless' && styles.selectedText]}>Timeless</Text>
+                </TouchableOpacity>
+              </View>
             </View>
             
             <View style={styles.difficultyContainer}>
@@ -189,6 +225,37 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 16,
     fontWeight: '500',
+  },
+  timeControlContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 15,
+    color: '#333',
+  },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  timeOption: {
+    flex: 1,
+    padding: 12,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f8f8f8',
+    alignItems: 'center',
+  },
+  timeOptionText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#555',
   },
   difficultyContainer: {
     width: '100%',

@@ -93,13 +93,32 @@ const gameSlice = createSlice({
       playerColor: 'white' | 'black'; 
       difficulty: 1 | 2 | 3 | 4 | 5;
       opponentType: 'computer' | 'human';
+      timeControl?: 'blitz' | 'rapid' | 'classical' | 'timeless';
     }>) => {
+      const getTimeSettings = (timeControl: string) => {
+        switch (timeControl) {
+          case 'blitz': return { initial: 300, increment: 0 };
+          case 'rapid': return { initial: 600, increment: 0 };
+          case 'classical': return { initial: 1800, increment: 0 };
+          case 'timeless': return { initial: 30, increment: 30 };
+          default: return { initial: 300, increment: 0 };
+        }
+      };
+      
+      const timeSettings = getTimeSettings(action.payload.timeControl || 'blitz');
+      
       state.current = {
         ...initialState.current,
         id: Date.now().toString(),
         playerColor: action.payload.playerColor,
         difficulty: action.payload.difficulty,
         opponentType: action.payload.opponentType,
+        timeControl: {
+          initial: timeSettings.initial,
+          increment: timeSettings.increment,
+          whiteTime: timeSettings.initial,
+          blackTime: timeSettings.initial,
+        },
       };
     },
     makeMove: (state, action: PayloadAction<Move>) => {
@@ -191,6 +210,17 @@ const gameSlice = createSlice({
         console.error('Failed to update analysis:', error);
       }
     },
+    updateTimer: (state, action: PayloadAction<{ player: 'white' | 'black'; time: number }>) => {
+      try {
+        if (action.payload.player === 'white') {
+          state.current.timeControl.whiteTime = Math.max(0, action.payload.time);
+        } else {
+          state.current.timeControl.blackTime = Math.max(0, action.payload.time);
+        }
+      } catch (error) {
+        console.error('Failed to update timer:', error);
+      }
+    },
   },
 });
 
@@ -201,6 +231,7 @@ export const {
   endGame,
   updateSettings,
   updateAnalysis,
+  updateTimer,
 } = gameSlice.actions;
 
 export default gameSlice.reducer;
