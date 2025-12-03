@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Chess } from 'chess.js';
 import Chessboard from 'react-native-chessboard';
 import { useLocalSearchParams } from 'expo-router';
+import { useAppSelector } from '../services/hooks';
 
 export default function ChessGameScreen() {
   const params = useLocalSearchParams();
@@ -12,9 +13,13 @@ export default function ChessGameScreen() {
   // Validate parameters
   const validColor = ['white', 'black'].includes(color as string) ? color : 'white';
   const validDifficulty = Math.max(1, Math.min(5, Number(difficulty) || 3));
+  
+  // Get user data from Redux
+  const user = useAppSelector(state => state.user);
+  
   const [game] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
-  const [playerRating, setPlayerRating] = useState(1200);
+  const [playerRating] = useState(user.rating.current);
   const [computerRating] = useState(1000 + (validDifficulty - 1) * 200);
 
   const onMove = (moveData: any) => {
@@ -38,24 +43,34 @@ export default function ChessGameScreen() {
       <Text style={styles.title}>Chess Game vs Computer</Text>
       <Text style={styles.gameInfo}>Playing as {validColor} • {getDifficultyLabel()}</Text>
       
-      <View style={styles.ratingContainer}>
-        <View style={styles.playerRating}>
-          <Text style={styles.ratingLabel}>You ({validColor})</Text>
-          <Text style={styles.ratingValue}>{playerRating}</Text>
-        </View>
-        <Text style={styles.vs}>VS</Text>
-        <View style={styles.computerRating}>
-          <Text style={styles.ratingLabel}>Computer</Text>
-          <Text style={styles.ratingValue}>{computerRating}</Text>
-        </View>
-      </View>
-      
       <View style={styles.boardContainer}>
+        <View style={styles.opponentInfo}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>C</Text>
+          </View>
+          <View style={styles.playerDetails}>
+            <Text style={styles.ratingLabel}>Computer</Text>
+            <Text style={styles.ratingValue}>{computerRating}</Text>
+          </View>
+        </View>
+        
         <Chessboard
           fen={fen}
           onMove={onMove}
           size={300}
         />
+        
+        <View style={styles.playerInfo}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {user.profile.name && user.profile.name.length > 0 ? user.profile.name.charAt(0).toUpperCase() : 'A'}
+            </Text>
+          </View>
+          <View style={styles.playerDetails}>
+            <Text style={styles.ratingLabel}>{user.profile.name} ({validColor})</Text>
+            <Text style={styles.ratingValue}>{playerRating}</Text>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -79,18 +94,37 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 20,
   },
-  ratingContainer: {
+  opponentInfo: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 20,
+    justifyContent: 'flex-start',
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    width: '100%',
   },
-  playerRating: {
+  playerInfo: {
+    flexDirection: 'row-reverse',
     alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 10,
+    alignSelf: 'flex-end',
   },
-  computerRating: {
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 8,
+  },
+  avatarText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  playerDetails: {
+    alignItems: 'flex-start',
   },
   ratingLabel: {
     fontSize: 14,
@@ -102,14 +136,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#007AFF',
   },
-  vs: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#999',
-  },
   boardContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
 });
