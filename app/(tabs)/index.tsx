@@ -6,15 +6,16 @@ import { useState } from 'react';
 export default function HomeScreen() {
   const [showColorModal, setShowColorModal] = useState(false);
   const [difficulty, setDifficulty] = useState(3);
+  const [selectedColor, setSelectedColor] = useState('white');
 
   const handlePlayWithComputer = () => {
     setShowColorModal(true);
   };
 
-  const selectColor = (color: string) => {
+  const startGame = () => {
     setShowColorModal(false);
-    const selectedColor = color === 'random' ? (Math.random() > 0.5 ? 'white' : 'black') : color;
-    router.push(`/chess-game?color=${selectedColor}&difficulty=${difficulty}`);
+    const finalColor = selectedColor === 'random' ? (Math.random() > 0.5 ? 'white' : 'black') : selectedColor;
+    router.push(`/chess-game?color=${finalColor}&difficulty=${difficulty}`);
   };
 
   const getDifficultyLabel = () => {
@@ -33,17 +34,28 @@ export default function HomeScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Choose Your Team</Text>
             
-            <TouchableOpacity style={[styles.colorButton, styles.whiteButton]} onPress={() => selectColor('white')}>
-              <Text style={styles.colorButtonText}>Play as White</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={[styles.colorButton, styles.blackButton]} onPress={() => selectColor('black')}>
-              <Text style={[styles.colorButtonText, styles.whiteText]}>Play as Black</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={[styles.colorButton, styles.randomButton]} onPress={() => selectColor('random')}>
-              <Text style={styles.colorButtonText}>Random Color</Text>
-            </TouchableOpacity>
+            <View style={styles.colorRow}>
+              <TouchableOpacity 
+                style={[styles.colorOption, selectedColor === 'white' && styles.selectedOption]} 
+                onPress={() => setSelectedColor('white')}
+              >
+                <Text style={[styles.colorOptionText, selectedColor === 'white' && styles.selectedText]}>White</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.colorOption, selectedColor === 'black' && styles.selectedOption]} 
+                onPress={() => setSelectedColor('black')}
+              >
+                <Text style={[styles.colorOptionText, selectedColor === 'black' && styles.selectedText]}>Black</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.colorOption, selectedColor === 'random' && styles.selectedOption]} 
+                onPress={() => setSelectedColor('random')}
+              >
+                <Text style={[styles.colorOptionText, selectedColor === 'random' && styles.selectedText]}>Random</Text>
+              </TouchableOpacity>
+            </View>
             
             <View style={styles.difficultyContainer}>
               <Text style={styles.difficultyTitle}>Difficulty: {getDifficultyLabel()}</Text>
@@ -59,6 +71,10 @@ export default function HomeScreen() {
                 thumbTintColor="#007AFF"
               />
             </View>
+            
+            <TouchableOpacity style={styles.playButton} onPress={startGame}>
+              <Text style={styles.playButtonText}>Play</Text>
+            </TouchableOpacity>
             
             <TouchableOpacity style={styles.cancelButton} onPress={() => setShowColorModal(false)}>
               <Text style={styles.cancelText}>Cancel</Text>
@@ -95,59 +111,89 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 30,
-    borderRadius: 15,
-    width: '80%',
+    padding: 25,
+    borderRadius: 20,
+    width: '85%',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 25,
+    color: '#333',
   },
-  colorButton: {
+  colorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     width: '100%',
+    marginBottom: 25,
+  },
+  colorOption: {
+    flex: 1,
     padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
+    marginHorizontal: 4,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f8f8f8',
     alignItems: 'center',
   },
-  whiteButton: {
-    backgroundColor: '#f0f0f0',
-    borderWidth: 2,
-    borderColor: '#ddd',
-  },
-  blackButton: {
-    backgroundColor: '#333',
-  },
-  randomButton: {
+  selectedOption: {
+    borderColor: '#007AFF',
     backgroundColor: '#007AFF',
+    transform: [{ scale: 1.05 }],
   },
-  colorButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  colorOptionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#555',
   },
-  whiteText: {
+  selectedText: {
     color: 'white',
   },
+  playButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 50,
+    paddingVertical: 16,
+    borderRadius: 25,
+    marginBottom: 15,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  playButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   cancelButton: {
-    marginTop: 10,
-    padding: 10,
+    padding: 12,
   },
   cancelText: {
-    color: '#666',
+    color: '#888',
     fontSize: 16,
+    fontWeight: '500',
   },
   difficultyContainer: {
     width: '100%',
-    marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 25,
+    backgroundColor: '#f5f5f5',
+    padding: 15,
+    borderRadius: 12,
   },
   difficultyTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
+    color: '#333',
   },
   slider: {
     width: '100%',
