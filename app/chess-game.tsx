@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert, BackHandler, Platform } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import Chessboard from 'react-native-chessboard';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router, useNavigation } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../services/hooks';
 import { makeMove, updateGameState, startNewGame, updateTimer, endGame } from '../services/game/gameSlice';
 import { adjustComputerDifficulty, updateStatistics } from '../services/user/userSlice';
@@ -36,10 +36,38 @@ export default function ChessGameScreen() {
   // Use adaptive difficulty if not specified
   const finalDifficulty = difficulty ? Number(difficulty) : user.computerDifficulty;
   
+  const navigation = useNavigation();
   const [chess] = useState(new Chess());
   const [fen, setFen] = useState(chess.fen());
   const [moveTimer, setMoveTimer] = useState(30);
   const [gameEnded, setGameEnded] = useState(false);
+  
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (gameEnded) return;
+      e.preventDefault();
+      Alert.alert(
+        'Quit Game',
+        'Do you want to quit? This will count as a loss.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Quit', 
+            style: 'destructive',
+            onPress: () => {
+              dispatch(endGame({ status: 'resigned', result: 'loss' }));
+              dispatch(updateStatistics('loss'));
+              dispatch(adjustComputerDifficulty('loss'));
+              navigation.dispatch(e.data.action);
+            }
+          }
+        ]
+      );
+    });
+    
+    return unsubscribe;
+  }, [navigation, gameEnded, dispatch]);
+  
   useEffect(() => {
     dispatch(startNewGame({
       playerColor: validColor as 'white' | 'black',
@@ -60,18 +88,22 @@ export default function ChessGameScreen() {
             ? game.current.timeControl.whiteTime 
             : game.current.timeControl.blackTime;
           
-          if (currentTime > 0) {
-            dispatch(updateTimer({ 
-              player: currentPlayer, 
-              time: currentTime - 1 
-            }));
+          if (currentTime <= 0) {
+            const result = currentPlayer === validColor ? 'loss' : 'win';
+            handleGameEnd(result);
+            return;
           }
+          
+          dispatch(updateTimer({ 
+            player: currentPlayer, 
+            time: currentTime - 1 
+          }));
         }
       }, 1000);
       
       return () => clearInterval(timer);
     }
-  }, [timeControl, game.current.status]);
+  }, [timeControl, game.current.status, validColor, handleGameEnd, dispatch]);
   
 
   const playerRating = useMemo(() => user.rating.current, [user.rating.current]);
@@ -87,7 +119,67 @@ export default function ChessGameScreen() {
     dispatch(adjustComputerDifficulty(result));
   }, [chess, dispatch, gameEnded]);
 
+  useEffect(() => {
+    const currentTurn = chess.turn();
+    const playerTurn = validColor === 'white' ? 'w' : 'b';
+    const isComputerTurn = currentTurn !== playerTurn;
+    
+    console.log('Computer move check:', {
+      status: game.current.status,
+      currentTurn,
+      playerTurn,
+      isComputerTurn,
+      fen
+    });
+    
+    if (game.current.status === 'playing' && isComputerTurn && !gameEnded) {
+      console.log('Computer should move now!');
+      const timeout = setTimeout(() => {
+        console.log('Computer making move...');
+        const moves = chess.moves({ verbose: true });
+        console.log('Available moves:', moves.length);
+        
+        if (moves.length > 0) {
+          const randomMove = moves[Math.floor(Math.random() * moves.length)];
+          console.log('Selected move:', randomMove);
+          const move = chess.move(randomMove);
+          
+          if (move) {
+            console.log('Move executed:', move.san);
+            const newFen = chess.fen();
+            setFen(newFen);
+            
+            dispatch(makeMove({
+              from: move.from,
+              to: move.to,
+              piece: move.piece,
+              captured: move.captured,
+              promotion: move.promotion,
+              san: move.san,
+              timestamp: new Date().toISOString(),
+            }));
+            
+            dispatch(updateGameState({
+              fen: newFen,
+              pgn: chess.pgn(),
+            }));
+            
+            if (chess.isCheckmate()) {
+              handleGameEnd('loss');
+            } else if (chess.isStalemate() || chess.isDraw()) {
+              handleGameEnd('draw');
+            }
+          }
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [fen, game.current.status, validColor, chess, dispatch, handleGameEnd, gameEnded]);
+
   const onMove = useCallback((moveData: any) => {
+    if (chess.turn() !== validColor.charAt(0)) return;
+    
     try {
       const move = chess.move(moveData.move);
       if (move) {
@@ -113,9 +205,8 @@ export default function ChessGameScreen() {
           setMoveTimer(30);
         }
         
-        // Check game end
         if (chess.isCheckmate()) {
-          handleGameEnd(chess.turn() === validColor ? 'loss' : 'win');
+          handleGameEnd('win');
         } else if (chess.isStalemate() || chess.isDraw()) {
           handleGameEnd('draw');
         }
@@ -168,9 +259,11 @@ export default function ChessGameScreen() {
         />
         
         <Chessboard
+          key={fen}
           fen={fen}
           onMove={onMove}
           size={300}
+          gestureEnabled={chess.turn() === validColor.charAt(0)}
         />
         
         <PlayerInfo

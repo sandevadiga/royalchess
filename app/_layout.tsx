@@ -3,8 +3,18 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '../services/store';
-import { View, Text } from 'react-native';
+import { View, Text, LogBox } from 'react-native';
 import ErrorBoundary from '../components/common/ErrorBoundary';
+
+LogBox.ignoreLogs(['[Reanimated]']);
+
+if (__DEV__) {
+  const originalWarn = console.warn;
+  console.warn = (...args) => {
+    if (args[0]?.includes?.('[Reanimated]')) return;
+    originalWarn(...args);
+  };
+}
 
 export default function RootLayout() {
   return (

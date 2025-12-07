@@ -65,6 +65,10 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
   const handleTimeSelect = useCallback((value: string) => {
     setTimeControl(value);
   }, []);
+  
+  const handleSliderChange = useCallback((value: number) => {
+    setDifficulty(Math.round(value));
+  }, []);
 
   return (
     <Modal visible={visible} onClose={onClose}>
@@ -101,7 +105,8 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
           maximumValue={2400}
           step={10}
           value={difficulty}
-          onValueChange={setDifficulty}
+          onValueChange={handleSliderChange}
+          onSlidingComplete={handleSliderChange}
           minimumTrackTintColor={theme.colors.primary}
           maximumTrackTintColor={theme.colors.border}
           thumbTintColor={theme.colors.primary}
