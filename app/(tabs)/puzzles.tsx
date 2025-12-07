@@ -1,17 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import EmptyState from '../../components/common/EmptyState';
 
 export default function PuzzlesScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Coming Soon</Text>
-    </View>
-  );
+  return <EmptyState message="Puzzles Coming Soon" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

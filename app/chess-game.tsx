@@ -5,6 +5,7 @@ import Chessboard from 'react-native-chessboard';
 import { useLocalSearchParams } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../services/hooks';
 import { makeMove, updateGameState, startNewGame, updateTimer } from '../services/game/gameSlice';
+import PlayerInfo from '../components/game/PlayerInfo';
 
 export default function ChessGameScreen() {
   const params = useLocalSearchParams();
@@ -109,6 +110,14 @@ export default function ChessGameScreen() {
     return labels[validDifficulty - 1] || 'Medium';
   };
 
+  const opponentTime = validColor === 'white' 
+    ? game.current.timeControl.blackTime 
+    : game.current.timeControl.whiteTime;
+  
+  const playerTime = validColor === 'white' 
+    ? game.current.timeControl.whiteTime 
+    : game.current.timeControl.blackTime;
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Chess Game vs Computer</Text>
@@ -121,22 +130,15 @@ export default function ChessGameScreen() {
       <Text style={styles.moveTimer}>Move Timer: {moveTimer}s</Text>
       
       <View style={styles.boardContainer}>
-        <View style={styles.opponentInfo}>
-          <View style={[styles.avatar, game.current.turn !== validColor && styles.activeTurn]}>
-            <Text style={styles.avatarText}>C</Text>
-          </View>
-          <View style={styles.playerDetails}>
-            <Text style={styles.ratingLabel}>Computer</Text>
-            <Text style={styles.ratingValue}>{computerRating}</Text>
-            {timeControl !== 'timeless' && (
-              <Text style={styles.timeRemaining}>
-                {Math.floor((validColor === 'white' ? game.current.timeControl.blackTime : game.current.timeControl.whiteTime) / 60)}:
-                {String((validColor === 'white' ? game.current.timeControl.blackTime : game.current.timeControl.whiteTime) % 60).padStart(2, '0')}
-              </Text>
-            )}
-            <Text style={styles.moveTime}>Move: {moveTimer}s</Text>
-          </View>
-        </View>
+        <PlayerInfo
+          name="Computer"
+          rating={computerRating}
+          timeRemaining={timeControl !== 'timeless' ? opponentTime : undefined}
+          moveTime={moveTimer}
+          isActive={game.current.turn !== validColor}
+          isOpponent={true}
+          style={styles.opponentInfo}
+        />
         
         <Chessboard
           fen={fen}
@@ -144,24 +146,15 @@ export default function ChessGameScreen() {
           size={300}
         />
         
-        <View style={styles.playerInfo}>
-          <View style={[styles.avatar, game.current.turn === validColor && styles.activeTurn]}>
-            <Text style={styles.avatarText}>
-              {user.profile.name && user.profile.name.length > 0 ? user.profile.name.charAt(0).toUpperCase() : 'A'}
-            </Text>
-          </View>
-          <View style={styles.playerDetails}>
-            <Text style={styles.ratingLabel}>{user.profile.name} ({validColor})</Text>
-            <Text style={styles.ratingValue}>{playerRating}</Text>
-            {timeControl !== 'timeless' && (
-              <Text style={styles.timeRemaining}>
-                {Math.floor((validColor === 'white' ? game.current.timeControl.whiteTime : game.current.timeControl.blackTime) / 60)}:
-                {String((validColor === 'white' ? game.current.timeControl.whiteTime : game.current.timeControl.blackTime) % 60).padStart(2, '0')}
-              </Text>
-            )}
-            <Text style={styles.moveTime}>Move: {moveTimer}s</Text>
-          </View>
-        </View>
+        <PlayerInfo
+          name={`${user.profile.name} (${validColor})`}
+          rating={playerRating}
+          timeRemaining={timeControl !== 'timeless' ? playerTime : undefined}
+          moveTime={moveTimer}
+          isActive={game.current.turn === validColor}
+          isOpponent={false}
+          style={styles.playerInfo}
+        />
       </View>
     </View>
   );
@@ -186,46 +179,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   opponentInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
     marginBottom: 10,
     alignSelf: 'flex-start',
-    width: '100%',
   },
   playerInfo: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
     marginTop: 10,
     alignSelf: 'flex-end',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  playerDetails: {
-    alignItems: 'flex-start',
-  },
-  ratingLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
-  },
-  ratingValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#007AFF',
   },
   boardContainer: {
     flex: 1,
@@ -233,28 +192,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
-  activeTurn: {
-    borderWidth: 3,
-    borderColor: '#FF0000',
-  },
   moveTimer: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#FF6B35',
     marginBottom: 10,
-  },
-  timeRemaining: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginTop: 5,
-  },
-  moveTime: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FF6B35',
-    marginTop: 5,
   },
   lastMove: {
     fontSize: 16,
