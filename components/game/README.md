@@ -1,0 +1,163 @@
+# 🎮 Game Components
+
+## 📁 Files in This Folder
+
+| File | Purpose | Lines | Status |
+|------|---------|-------|--------|
+| `GameSetupModal.tsx` | Game setup modal (color, difficulty, time) | 140 | ✅ Active |
+| `PlayerInfo.tsx` | Player/Computer info display | 80 | ✅ Active |
+
+---
+
+## 🔍 Component Details
+
+### **GameSetupModal.tsx**
+**Purpose:** Complete game setup interface
+
+**Props:**
+```typescript
+{
+  visible: boolean;
+  onClose: () => void;
+  onStartGame: (config: GameConfig) => void;
+}
+
+interface GameConfig {
+  color: 'white' | 'black' | 'random';
+  difficulty: number;
+  timeControl: string;
+}
+```
+
+**Used In:**
+- ✅ `app/(tabs)/index.tsx` - Home screen game setup
+
+**Dependencies:**
+- `components/ui/Modal.tsx`
+- `components/ui/Button.tsx`
+- `components/common/OptionSelector.tsx`
+- `@react-native-community/slider`
+
+**Change Impact:** 🟢 LOW - Used in 1 place only
+
+---
+
+### **PlayerInfo.tsx**
+**Purpose:** Display player/computer information with timer
+
+**Props:**
+```typescript
+{
+  name: string;
+  rating: number;
+  timeRemaining?: number;
+  moveTime?: number;
+  isActive?: boolean;
+  isOpponent?: boolean;
+  style?: ViewStyle;
+}
+```
+
+**Used In:**
+- ✅ `app/chess-game.tsx` - Game screen (2 instances: player + computer)
+
+**Dependencies:**
+- `components/ui/Avatar.tsx`
+
+**Change Impact:** 🟢 LOW - Used in 1 screen only
+
+---
+
+## 🔗 Dependencies
+
+```
+GameSetupModal ──┬──> Modal
+                 ├──> Button
+                 ├──> OptionSelector
+                 └──> Slider
+
+PlayerInfo ──────┬──> Avatar
+                 └──> Text/View
+```
+
+---
+
+## ⚠️ Change Impact Matrix
+
+| Component | Impact | Affected Files | Test Required |
+|-----------|--------|----------------|---------------|
+| GameSetupModal | 🟢 LOW | 1 file | ✅ Yes |
+| PlayerInfo | 🟢 LOW | 1 file | ✅ Yes |
+
+---
+
+## 📝 Usage Examples
+
+### GameSetupModal
+```typescript
+import GameSetupModal, { GameConfig } from '../../components/game/GameSetupModal';
+
+const [showModal, setShowModal] = useState(false);
+
+const handleStartGame = (config: GameConfig) => {
+  console.log(config); // { color, difficulty, timeControl }
+  setShowModal(false);
+};
+
+<GameSetupModal
+  visible={showModal}
+  onClose={() => setShowModal(false)}
+  onStartGame={handleStartGame}
+/>
+```
+
+### PlayerInfo
+```typescript
+import PlayerInfo from '../../components/game/PlayerInfo';
+
+// Player
+<PlayerInfo
+  name="John Doe"
+  rating={1500}
+  timeRemaining={300}
+  moveTime={25}
+  isActive={true}
+  isOpponent={false}
+/>
+
+// Computer
+<PlayerInfo
+  name="Computer"
+  rating={1800}
+  isActive={false}
+  isOpponent={true}
+/>
+```
+
+---
+
+## 🚀 Future Components (Planned)
+
+- [ ] `GameTimer.tsx` - Countdown timer component
+- [ ] `MoveHistory.tsx` - Move list display
+- [ ] `GameControls.tsx` - Resign, Draw, Pause buttons
+- [ ] `CapturedPieces.tsx` - Captured pieces display
+- [ ] `GameResult.tsx` - Win/Loss/Draw modal
+
+---
+
+## 🐛 Common Issues
+
+**Issue:** GameSetupModal not closing  
+**Fix:** Ensure `onStartGame` calls `onClose`
+
+**Issue:** PlayerInfo timer not updating  
+**Fix:** Pass updated `timeRemaining` prop
+
+**Issue:** Avatar not showing  
+**Fix:** Ensure `name` prop is valid string
+
+---
+
+**Last Updated:** After refactoring  
+**Maintainer:** Development Team
