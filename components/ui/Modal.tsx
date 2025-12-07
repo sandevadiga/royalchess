@@ -1,5 +1,5 @@
 import { Modal as RNModal, View, StyleSheet, ViewStyle } from 'react-native';
-import { ReactNode } from 'react';
+import { ReactNode, memo } from 'react';
 
 interface ModalProps {
   visible: boolean;
@@ -8,7 +8,7 @@ interface ModalProps {
   contentStyle?: ViewStyle;
 }
 
-export default function Modal({ visible, onClose, children, contentStyle }: ModalProps) {
+function Modal({ visible, onClose, children, contentStyle }: ModalProps) {
   return (
     <RNModal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -39,3 +39,5 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 });
+
+export default memo(Modal);

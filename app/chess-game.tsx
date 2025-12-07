@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import Chessboard from 'react-native-chessboard';
 import { useLocalSearchParams } from 'expo-router';
@@ -17,7 +17,7 @@ export default function ChessGameScreen() {
   const validColor = ['white', 'black'].includes(color as string) ? color : 'white';
   const validDifficulty = Math.max(1, Math.min(5, Number(difficulty) || 3));
   
-  const getTimeControlLabel = () => {
+  const timeControlLabel = useMemo(() => {
     const labels = {
       blitz: 'Blitz 5min',
       rapid: 'Rapid 10min', 
@@ -25,7 +25,7 @@ export default function ChessGameScreen() {
       timeless: 'Timeless'
     };
     return labels[timeControl as keyof typeof labels] || 'Blitz 5min';
-  };
+  }, [timeControl]);
   
   // Get user data from Redux
   const user = useAppSelector(state => state.user);
@@ -69,10 +69,10 @@ export default function ChessGameScreen() {
   }, [timeControl, game.current.status]);
   
 
-  const [playerRating] = useState(user.rating.current);
-  const [computerRating] = useState(1000 + (validDifficulty - 1) * 200);
+  const playerRating = useMemo(() => user.rating.current, [user.rating.current]);
+  const computerRating = useMemo(() => 1000 + (validDifficulty - 1) * 200, [validDifficulty]);
 
-  const onMove = (moveData: any) => {
+  const onMove = useCallback((moveData: any) => {
     try {
       const move = chess.move(moveData.move);
       if (move) {
@@ -103,28 +103,33 @@ export default function ChessGameScreen() {
     } catch (error) {
       console.log('Invalid move:', error);
     }
-  };
+  }, [chess, dispatch, timeControl]);
 
-  const getDifficultyLabel = () => {
+  const difficultyLabel = useMemo(() => {
     const labels = ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'];
     return labels[validDifficulty - 1] || 'Medium';
-  };
+  }, [validDifficulty]);
 
-  const opponentTime = validColor === 'white' 
+  const opponentTime = useMemo(() => validColor === 'white' 
     ? game.current.timeControl.blackTime 
-    : game.current.timeControl.whiteTime;
+    : game.current.timeControl.whiteTime, [validColor, game.current.timeControl.blackTime, game.current.timeControl.whiteTime]);
   
-  const playerTime = validColor === 'white' 
+  const playerTime = useMemo(() => validColor === 'white' 
     ? game.current.timeControl.whiteTime 
-    : game.current.timeControl.blackTime;
+    : game.current.timeControl.blackTime, [validColor, game.current.timeControl.whiteTime, game.current.timeControl.blackTime]);
+
+  const movesDisplay = useMemo(() => 
+    game.current.moves.map(move => move.san).join(', '),
+    [game.current.moves]
+  );
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Chess Game vs Computer</Text>
-      <Text style={styles.gameInfo}>Playing as {validColor} • {getDifficultyLabel()} • {getTimeControlLabel()}</Text>
+      <Text style={styles.gameInfo}>Playing as {validColor} • {difficultyLabel} • {timeControlLabel}</Text>
       {game.current.moves.length > 0 && (
         <Text style={styles.lastMove}>
-          Moves: {game.current.moves.map(move => move.san).join(', ')}
+          Moves: {movesDisplay}
         </Text>
       )}
       <Text style={styles.moveTimer}>Move Timer: {moveTimer}s</Text>

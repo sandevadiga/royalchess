@@ -1,12 +1,12 @@
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { ReactNode } from 'react';
+import { ReactNode, memo } from 'react';
 
 interface CardProps {
   children: ReactNode;
   style?: ViewStyle;
 }
 
-export default function Card({ children, style }: CardProps) {
+function Card({ children, style }: CardProps) {
   return (
     <View style={[styles.card, style]}>
       {children}
@@ -26,3 +26,5 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 });
+
+export default memo(Card);

@@ -1,10 +1,11 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { memo } from 'react';
 
 interface EmptyStateProps {
   message?: string;
 }
 
-export default function EmptyState({ message = 'Coming Soon' }: EmptyStateProps) {
+function EmptyState({ message = 'Coming Soon' }: EmptyStateProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>{message}</Text>
@@ -23,3 +24,5 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 });
+
+export default memo(EmptyState);

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAppSelector, useAppDispatch } from '../../services/hooks';
 import { updateProfile, updatePreferences } from '../../services/user/userSlice';
 import { updateTheme } from '../../services/theme/themeSlice';
@@ -12,12 +12,26 @@ export default function ProfileScreen() {
   const theme = useAppSelector(state => state.theme);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const handleSave = (data: ProfileData) => {
+  const handleOpenModal = useCallback(() => {
+    setShowEditModal(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setShowEditModal(false);
+  }, []);
+
+  const handleSave = useCallback((data: ProfileData) => {
     dispatch(updateProfile({ name: data.name }));
     dispatch(updatePreferences({ favoriteColor: data.favoriteColor }));
     dispatch(updateTheme({ mode: data.theme }));
     setShowEditModal(false);
-  };
+  }, [dispatch]);
+
+  const initialData = useMemo(() => ({
+    name: user.profile.name,
+    favoriteColor: user.preferences.favoriteColor,
+    theme: theme.current.mode,
+  }), [user.profile.name, user.preferences.favoriteColor, theme.current.mode]);
 
   return (
     <View style={styles.container}>
@@ -31,18 +45,14 @@ export default function ProfileScreen() {
         wins={user.statistics.wins}
         favoriteColor={user.preferences.favoriteColor}
         theme={theme.current.mode}
-        onEdit={() => setShowEditModal(true)}
+        onEdit={handleOpenModal}
       />
 
       <ProfileEditModal
         visible={showEditModal}
-        onClose={() => setShowEditModal(false)}
+        onClose={handleCloseModal}
         onSave={handleSave}
-        initialData={{
-          name: user.profile.name,
-          favoriteColor: user.preferences.favoriteColor,
-          theme: theme.current.mode,
-        }}
+        initialData={initialData}
       />
     </View>
   );

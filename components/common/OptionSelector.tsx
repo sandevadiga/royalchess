@@ -1,4 +1,5 @@
 import { View, TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
+import { memo } from 'react';
 
 interface Option {
   value: string;
@@ -12,7 +13,7 @@ interface OptionSelectorProps {
   style?: ViewStyle;
 }
 
-export default function OptionSelector({ options, selected, onSelect, style }: OptionSelectorProps) {
+function OptionSelector({ options, selected, onSelect, style }: OptionSelectorProps) {
   return (
     <View style={[styles.container, style]}>
       {options.map((option) => (
@@ -64,3 +65,5 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
+
+export default memo(OptionSelector);

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { useState } from 'react';
+import { useState, useCallback, memo, useMemo } from 'react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -18,7 +18,7 @@ export interface ProfileData {
   theme: 'light' | 'dark' | 'auto';
 }
 
-export default function ProfileEditModal({ 
+function ProfileEditModal({ 
   visible, 
   onClose, 
   onSave, 
@@ -28,21 +28,29 @@ export default function ProfileEditModal({
   const [favoriteColor, setFavoriteColor] = useState(initialData.favoriteColor);
   const [theme, setTheme] = useState(initialData.theme);
 
-  const colorOptions = [
+  const colorOptions = useMemo(() => [
     { value: 'white', label: 'White' },
     { value: 'black', label: 'Black' },
     { value: 'random', label: 'Random' },
-  ];
+  ], []);
 
-  const themeOptions = [
+  const themeOptions = useMemo(() => [
     { value: 'light', label: 'Light' },
     { value: 'dark', label: 'Dark' },
     { value: 'auto', label: 'Auto' },
-  ];
+  ], []);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     onSave({ name, favoriteColor, theme });
-  };
+  }, [name, favoriteColor, theme, onSave]);
+
+  const handleColorSelect = useCallback((value: string) => {
+    setFavoriteColor(value as any);
+  }, []);
+
+  const handleThemeSelect = useCallback((value: string) => {
+    setTheme(value as any);
+  }, []);
 
   return (
     <Modal visible={visible} onClose={onClose}>
@@ -60,7 +68,7 @@ export default function ProfileEditModal({
       <OptionSelector
         options={colorOptions}
         selected={favoriteColor}
-        onSelect={(value) => setFavoriteColor(value as any)}
+        onSelect={handleColorSelect}
         style={styles.section}
       />
       
@@ -68,7 +76,7 @@ export default function ProfileEditModal({
       <OptionSelector
         options={themeOptions}
         selected={theme}
-        onSelect={(value) => setTheme(value as any)}
+        onSelect={handleThemeSelect}
         style={styles.section}
       />
       
@@ -118,3 +126,5 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+export default memo(ProfileEditModal);

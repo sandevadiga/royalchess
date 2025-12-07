@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { memo } from 'react';
 import Card from '../ui/Card';
 import Avatar from '../ui/Avatar';
 import Button from '../ui/Button';
@@ -14,7 +15,7 @@ interface ProfileCardProps {
   onEdit: () => void;
 }
 
-export default function ProfileCard({
+function ProfileCard({
   name,
   isAnonymous,
   rating,
@@ -120,3 +121,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 });
+
+export default memo(ProfileCard);

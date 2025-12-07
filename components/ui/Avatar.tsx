@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { memo } from 'react';
 
 interface AvatarProps {
   name: string;
@@ -7,7 +8,7 @@ interface AvatarProps {
   style?: ViewStyle;
 }
 
-export default function Avatar({ name, size = 40, isActive = false, style }: AvatarProps) {
+function Avatar({ name, size = 40, isActive = false, style }: AvatarProps) {
   const initial = name && name.length > 0 ? name.charAt(0).toUpperCase() : 'A';
   
   return (
@@ -41,3 +42,5 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
+
+export default memo(Avatar);

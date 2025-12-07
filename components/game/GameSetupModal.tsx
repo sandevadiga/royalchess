@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { useState } from 'react';
+import { useState, useCallback, memo, useMemo } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import OptionSelector from '../common/OptionSelector';
@@ -17,29 +17,37 @@ export interface GameConfig {
   timeControl: string;
 }
 
-export default function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) {
+function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) {
   const [selectedColor, setSelectedColor] = useState<'white' | 'black' | 'random'>('white');
   const [difficulty, setDifficulty] = useState(3);
   const [timeControl, setTimeControl] = useState('blitz');
 
-  const colorOptions = [
+  const colorOptions = useMemo(() => [
     { value: 'white', label: 'White' },
     { value: 'black', label: 'Black' },
     { value: 'random', label: 'Random' },
-  ];
+  ], []);
 
-  const timeOptions = [
+  const timeOptions = useMemo(() => [
     { value: 'blitz', label: 'Blitz 5min' },
     { value: 'rapid', label: 'Rapid 10min' },
     { value: 'classical', label: 'Classical 30min' },
     { value: 'timeless', label: 'Timeless' },
-  ];
+  ], []);
 
-  const difficultyLabels = ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'];
+  const difficultyLabels = useMemo(() => ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'], []);
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     onStartGame({ color: selectedColor, difficulty, timeControl });
-  };
+  }, [selectedColor, difficulty, timeControl, onStartGame]);
+
+  const handleColorSelect = useCallback((value: string) => {
+    setSelectedColor(value as any);
+  }, []);
+
+  const handleTimeSelect = useCallback((value: string) => {
+    setTimeControl(value);
+  }, []);
 
   return (
     <Modal visible={visible} onClose={onClose}>
@@ -48,7 +56,7 @@ export default function GameSetupModal({ visible, onClose, onStartGame }: GameSe
       <OptionSelector
         options={colorOptions}
         selected={selectedColor}
-        onSelect={(value) => setSelectedColor(value as any)}
+        onSelect={handleColorSelect}
         style={styles.section}
       />
 
@@ -59,7 +67,7 @@ export default function GameSetupModal({ visible, onClose, onStartGame }: GameSe
             key={option.value}
             title={option.label}
             variant={timeControl === option.value ? 'primary' : 'outline'}
-            onPress={() => setTimeControl(option.value)}
+            onPress={() => handleTimeSelect(option.value)}
             style={styles.timeButton}
             textStyle={styles.timeButtonText}
           />
@@ -145,3 +153,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
 });
+
+export default memo(GameSetupModal);

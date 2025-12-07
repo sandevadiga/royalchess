@@ -1,4 +1,5 @@
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { memo } from 'react';
 
 interface ButtonProps {
   onPress: () => void;
@@ -9,7 +10,7 @@ interface ButtonProps {
   disabled?: boolean;
 }
 
-export default function Button({ 
+function Button({ 
   onPress, 
   title, 
   variant = 'primary', 
@@ -77,3 +78,5 @@ const styles = StyleSheet.create({
     color: '#888',
   },
 });
+
+export default memo(Button);

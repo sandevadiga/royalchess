@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { memo, useMemo } from 'react';
 import Avatar from '../ui/Avatar';
 
 interface PlayerInfoProps {
@@ -11,7 +12,7 @@ interface PlayerInfoProps {
   style?: ViewStyle;
 }
 
-export default function PlayerInfo({ 
+function PlayerInfo({ 
   name, 
   rating, 
   timeRemaining, 
@@ -20,11 +21,12 @@ export default function PlayerInfo({
   isOpponent = false,
   style 
 }: PlayerInfoProps) {
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+  const formattedTime = useMemo(() => {
+    if (timeRemaining === undefined) return null;
+    const mins = Math.floor(timeRemaining / 60);
+    const secs = timeRemaining % 60;
     return `${mins}:${String(secs).padStart(2, '0')}`;
-  };
+  }, [timeRemaining]);
 
   return (
     <View style={[
@@ -36,8 +38,8 @@ export default function PlayerInfo({
       <View style={styles.details}>
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.rating}>{rating}</Text>
-        {timeRemaining !== undefined && (
-          <Text style={styles.time}>{formatTime(timeRemaining)}</Text>
+        {formattedTime && (
+          <Text style={styles.time}>{formattedTime}</Text>
         )}
         {moveTime !== undefined && (
           <Text style={styles.moveTime}>Move: {moveTime}s</Text>
@@ -86,3 +88,5 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
+
+export default memo(PlayerInfo);

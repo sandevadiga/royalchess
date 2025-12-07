@@ -1,10 +1,11 @@
 import { TextInput, StyleSheet, TextInputProps, ViewStyle } from 'react-native';
+import { memo } from 'react';
 
 interface InputProps extends TextInputProps {
   style?: ViewStyle;
 }
 
-export default function Input({ style, ...props }: InputProps) {
+function Input({ style, ...props }: InputProps) {
   return (
     <TextInput
       style={[styles.input, style]}
@@ -24,3 +25,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
 });
+
+export default memo(Input);
