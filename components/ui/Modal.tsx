@@ -1,5 +1,7 @@
 import { Modal as RNModal, View, StyleSheet, ViewStyle } from 'react-native';
 import { ReactNode, memo } from 'react';
+import { useTheme } from '../../common/styles/themes/useTheme';
+import { LAYOUT, SPACING, RADIUS, SHADOW } from '../../constants';
 
 interface ModalProps {
   visible: boolean;
@@ -9,10 +11,12 @@ interface ModalProps {
 }
 
 function Modal({ visible, onClose, children, contentStyle }: ModalProps) {
+  const { theme } = useTheme();
+  
   return (
     <RNModal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={[styles.content, contentStyle]}>
+        <View style={[styles.content, { backgroundColor: theme.colors.surface }, contentStyle]}>
           {children}
         </View>
       </View>
@@ -28,15 +32,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   content: {
-    backgroundColor: 'white',
-    padding: 25,
-    borderRadius: 20,
-    width: '85%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    padding: SPACING.XXL,
+    borderRadius: RADIUS.XXXL,
+    width: LAYOUT.MODAL_WIDTH,
+    ...SHADOW.MEDIUM,
   },
 });
 

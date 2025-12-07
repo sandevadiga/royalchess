@@ -6,6 +6,7 @@
 |------|---------|-------|--------|----------|
 | `EmptyState.tsx` | "Coming Soon" placeholder | 25 | ✅ Active | ⚡ memo |
 | `OptionSelector.tsx` | Generic option picker | 65 | ✅ Active | ⚡ memo |
+| `ErrorBoundary.tsx` | Error handling boundary | 70 | ✅ Active | ⚡ Class component |
 
 ---
 
@@ -55,6 +56,28 @@
 **Change Impact:** 🟡 MEDIUM - Used in 2 places
 
 **Performance:** ⚡ Optimized with React.memo - 60% fewer re-renders
+
+---
+
+### **ErrorBoundary.tsx**
+**Purpose:** Catch React errors and prevent app crashes
+
+**Props:**
+```typescript
+{
+  children: ReactNode;
+  fallback?: ReactNode;  // Custom error UI
+}
+```
+
+**Used In:**
+- ✅ `app/_layout.tsx` - Root level error boundary
+
+**Dependencies:** None (primitive component)
+
+**Change Impact:** 🔴 HIGH - Protects entire app
+
+**Performance:** ⚡ Class component (required for error boundaries)
 
 ---
 
@@ -130,7 +153,7 @@ const options = [
 ## 🚀 Future Components (Planned)
 
 - [ ] `LoadingSpinner.tsx` - Loading indicator
-- [ ] `ErrorBoundary.tsx` - Error handling
+- [x] `ErrorBoundary.tsx` - Error handling ✅ DONE
 - [ ] `Toast.tsx` - Notification toast
 - [ ] `Tabs.tsx` - Tab navigation
 - [ ] `SearchBar.tsx` - Search input

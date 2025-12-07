@@ -16,3 +16,4 @@ export { default as ProfileEditModal } from './profile/ProfileEditModal';
 // Common Components
 export { default as EmptyState } from './common/EmptyState';
 export { default as OptionSelector } from './common/OptionSelector';
+export { default as ErrorBoundary } from './common/ErrorBoundary';

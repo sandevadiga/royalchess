@@ -1,5 +1,7 @@
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { memo } from 'react';
+import { useTheme } from '../../common/styles/themes/useTheme';
+import { SPACING, RADIUS, FONT } from '../../constants';
 
 interface ButtonProps {
   onPress: () => void;
@@ -18,18 +20,34 @@ function Button({
   textStyle,
   disabled = false 
 }: ButtonProps) {
+  const { theme } = useTheme();
+  
+  const variantStyles = {
+    primary: { backgroundColor: theme.colors.primary },
+    secondary: { backgroundColor: theme.colors.secondary },
+    outline: { backgroundColor: 'transparent', borderWidth: 2, borderColor: theme.colors.primary },
+    cancel: { backgroundColor: 'transparent' },
+  };
+
+  const textStyles = {
+    primary: { color: theme.colors.background },
+    secondary: { color: theme.colors.background },
+    outline: { color: theme.colors.primary },
+    cancel: { color: theme.colors.textSecondary },
+  };
+
   return (
     <TouchableOpacity
       style={[
         styles.base,
-        styles[variant],
+        variantStyles[variant],
         disabled && styles.disabled,
         style
       ]}
       onPress={onPress}
       disabled={disabled}
     >
-      <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>
+      <Text style={[styles.text, textStyles[variant], textStyle]}>
         {title}
       </Text>
     </TouchableOpacity>
@@ -38,44 +56,18 @@ function Button({
 
 const styles = StyleSheet.create({
   base: {
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 8,
+    paddingHorizontal: SPACING.XXL,
+    paddingVertical: SPACING.LG,
+    borderRadius: RADIUS.MD,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  primary: {
-    backgroundColor: '#007AFF',
-  },
-  secondary: {
-    backgroundColor: '#5856D6',
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-  },
-  cancel: {
-    backgroundColor: 'transparent',
   },
   disabled: {
     opacity: 0.5,
   },
   text: {
-    fontSize: 16,
+    fontSize: FONT.BASE,
     fontWeight: 'bold',
-  },
-  primaryText: {
-    color: 'white',
-  },
-  secondaryText: {
-    color: 'white',
-  },
-  outlineText: {
-    color: '#007AFF',
-  },
-  cancelText: {
-    color: '#888',
   },
 });
 

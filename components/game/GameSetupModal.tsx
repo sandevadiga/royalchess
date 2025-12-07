@@ -4,6 +4,8 @@ import { useState, useCallback, memo, useMemo } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import OptionSelector from '../common/OptionSelector';
+import { useTheme } from '../../common/styles/themes/useTheme';
+import { SPACING, RADIUS, FONT } from '../../constants';
 
 interface GameSetupModalProps {
   visible: boolean;
@@ -18,6 +20,7 @@ export interface GameConfig {
 }
 
 function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) {
+  const { theme } = useTheme();
   const [selectedColor, setSelectedColor] = useState<'white' | 'black' | 'random'>('white');
   const [difficulty, setDifficulty] = useState(3);
   const [timeControl, setTimeControl] = useState('blitz');
@@ -51,7 +54,7 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
 
   return (
     <Modal visible={visible} onClose={onClose}>
-      <Text style={styles.title}>Choose Your Team</Text>
+      <Text style={[styles.title, { color: theme.colors.text }]}>Choose Your Team</Text>
       
       <OptionSelector
         options={colorOptions}
@@ -60,7 +63,7 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
         style={styles.section}
       />
 
-      <Text style={styles.sectionTitle}>Time Control</Text>
+      <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Time Control</Text>
       <View style={styles.timeGrid}>
         {timeOptions.map((option) => (
           <Button
@@ -74,8 +77,8 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
         ))}
       </View>
 
-      <View style={styles.difficultyContainer}>
-        <Text style={styles.difficultyTitle}>
+      <View style={[styles.difficultyContainer, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.difficultyTitle, { color: theme.colors.text }]}>
           Difficulty: {difficultyLabels[difficulty - 1]}
         </Text>
         <Slider
@@ -85,9 +88,9 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
           step={1}
           value={difficulty}
           onValueChange={setDifficulty}
-          minimumTrackTintColor="#007AFF"
-          maximumTrackTintColor="#ddd"
-          thumbTintColor="#007AFF"
+          minimumTrackTintColor={theme.colors.primary}
+          maximumTrackTintColor={theme.colors.border}
+          thumbTintColor={theme.colors.primary}
         />
       </View>
 
@@ -99,57 +102,53 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 22,
+    fontSize: FONT.XXL,
     fontWeight: 'bold',
-    marginBottom: 25,
-    color: '#333',
+    marginBottom: SPACING.XXL,
     textAlign: 'center',
   },
   section: {
-    marginBottom: 25,
+    marginBottom: SPACING.XXL,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT.BASE,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 15,
-    color: '#333',
+    marginBottom: SPACING.LG,
   },
   timeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: SPACING.XL,
   },
   timeButton: {
     width: '48%',
-    marginBottom: 10,
-    paddingVertical: 12,
+    marginBottom: SPACING.LG,
+    paddingVertical: SPACING.MD,
   },
   timeButtonText: {
-    fontSize: 13,
+    fontSize: FONT.SM,
   },
   difficultyContainer: {
     width: '100%',
-    marginBottom: 25,
-    backgroundColor: '#f5f5f5',
-    padding: 15,
-    borderRadius: 12,
+    marginBottom: SPACING.XXL,
+    padding: SPACING.LG,
+    borderRadius: RADIUS.XL,
   },
   difficultyTitle: {
-    fontSize: 16,
+    fontSize: FONT.BASE,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 15,
-    color: '#333',
+    marginBottom: SPACING.LG,
   },
   slider: {
     width: '100%',
     height: 40,
   },
   playButton: {
-    marginBottom: 15,
-    borderRadius: 25,
+    marginBottom: SPACING.LG,
+    borderRadius: RADIUS.ROUND,
     paddingVertical: 16,
   },
 });

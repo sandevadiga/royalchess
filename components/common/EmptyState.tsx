@@ -1,14 +1,18 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { memo } from 'react';
+import { useTheme } from '../../common/styles/themes/useTheme';
+import { FONT } from '../../constants';
 
 interface EmptyStateProps {
   message?: string;
 }
 
 function EmptyState({ message = 'Coming Soon' }: EmptyStateProps) {
+  const { theme } = useTheme();
+  
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{message}</Text>
+      <Text style={[styles.text, { color: theme.colors.textSecondary }]}>{message}</Text>
     </View>
   );
 }
@@ -20,8 +24,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: FONT.LG,
   },
 });
 

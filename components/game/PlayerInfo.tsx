@@ -1,6 +1,8 @@
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { memo, useMemo } from 'react';
 import Avatar from '../ui/Avatar';
+import { useTheme } from '../../common/styles/themes/useTheme';
+import { SPACING, FONT, LAYOUT } from '../../constants';
 
 interface PlayerInfoProps {
   name: string;
@@ -21,6 +23,8 @@ function PlayerInfo({
   isOpponent = false,
   style 
 }: PlayerInfoProps) {
+  const { theme } = useTheme();
+  
   const formattedTime = useMemo(() => {
     if (timeRemaining === undefined) return null;
     const mins = Math.floor(timeRemaining / 60);
@@ -34,15 +38,15 @@ function PlayerInfo({
       isOpponent ? styles.opponent : styles.player,
       style
     ]}>
-      <Avatar name={name} size={40} isActive={isActive} />
+      <Avatar name={name} size={LAYOUT.AVATAR_SIZE_DEFAULT} isActive={isActive} />
       <View style={styles.details}>
-        <Text style={styles.name}>{name}</Text>
-        <Text style={styles.rating}>{rating}</Text>
+        <Text style={[styles.name, { color: theme.colors.textSecondary }]}>{name}</Text>
+        <Text style={[styles.rating, { color: theme.colors.primary }]}>{rating}</Text>
         {formattedTime && (
-          <Text style={styles.time}>{formattedTime}</Text>
+          <Text style={[styles.time, { color: theme.colors.primary }]}>{formattedTime}</Text>
         )}
         {moveTime !== undefined && (
-          <Text style={styles.moveTime}>Move: {moveTime}s</Text>
+          <Text style={[styles.moveTime, { color: theme.colors.warning }]}>Move: {moveTime}s</Text>
         )}
       </View>
     </View>
@@ -63,28 +67,24 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   details: {
-    marginHorizontal: 8,
+    marginHorizontal: SPACING.SM,
   },
   name: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: FONT.MD,
     marginBottom: 5,
   },
   rating: {
-    fontSize: 20,
+    fontSize: FONT.XL,
     fontWeight: 'bold',
-    color: '#007AFF',
   },
   time: {
-    fontSize: 16,
+    fontSize: FONT.BASE,
     fontWeight: 'bold',
-    color: '#007AFF',
     marginTop: 5,
   },
   moveTime: {
-    fontSize: 14,
+    fontSize: FONT.MD,
     fontWeight: '600',
-    color: '#FF6B35',
     marginTop: 5,
   },
 });

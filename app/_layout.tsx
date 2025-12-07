@@ -4,20 +4,23 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '../services/store';
 import { View, Text } from 'react-native';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 export default function RootLayout() {
   return (
-    <Provider store={store}>
-      <PersistGate 
-        loading={<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Loading...</Text></View>} 
-        persistor={persistor}
-      >
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-        </GestureHandlerRootView>
-      </PersistGate>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <PersistGate 
+          loading={<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Loading...</Text></View>} 
+          persistor={persistor}
+        >
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          </GestureHandlerRootView>
+        </PersistGate>
+      </Provider>
+    </ErrorBoundary>
   );
 }

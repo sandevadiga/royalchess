@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { memo } from 'react';
+import { useTheme } from '../../common/styles/themes/useTheme';
+import { LAYOUT } from '../../constants';
 
 interface AvatarProps {
   name: string;
@@ -8,19 +10,25 @@ interface AvatarProps {
   style?: ViewStyle;
 }
 
-function Avatar({ name, size = 40, isActive = false, style }: AvatarProps) {
+function Avatar({ name, size = LAYOUT.AVATAR_SIZE_DEFAULT, isActive = false, style }: AvatarProps) {
+  const { theme } = useTheme();
   const initial = name && name.length > 0 ? name.charAt(0).toUpperCase() : 'A';
   
   return (
     <View 
       style={[
         styles.avatar, 
-        { width: size, height: size, borderRadius: size / 2 },
-        isActive && styles.active,
+        { 
+          width: size, 
+          height: size, 
+          borderRadius: size / 2,
+          backgroundColor: theme.colors.primary,
+        },
+        isActive && { borderWidth: 3, borderColor: theme.colors.error },
         style
       ]}
     >
-      <Text style={[styles.text, { fontSize: size * 0.4 }]}>
+      <Text style={[styles.text, { fontSize: size * 0.4, color: theme.colors.background }]}>
         {initial}
       </Text>
     </View>
@@ -29,17 +37,11 @@ function Avatar({ name, size = 40, isActive = false, style }: AvatarProps) {
 
 const styles = StyleSheet.create({
   avatar: {
-    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  active: {
-    borderWidth: 3,
-    borderColor: '#FF0000',
-  },
   text: {
     fontWeight: 'bold',
-    color: 'white',
   },
 });
 
