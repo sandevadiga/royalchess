@@ -20,6 +20,7 @@ interface UserState {
     peak: number;
     history: RatingHistory[];
   };
+  computerDifficulty: number; // Adaptive AI difficulty (800-2400)
   statistics: {
     gamesPlayed: number;
     wins: number;
@@ -53,6 +54,7 @@ const initialState: UserState = {
     peak: 1200,
     history: [],
   },
+  computerDifficulty: 1200, // Match user rating
   statistics: {
     gamesPlayed: 0,
     wins: 0,
@@ -131,6 +133,10 @@ const userSlice = createSlice({
         expiresAt: null,
       };
     },
+    adjustComputerDifficulty: (state, action: PayloadAction<'win' | 'loss' | 'draw'>) => {
+      const change = action.payload === 'win' ? 20 : action.payload === 'loss' ? -20 : 0;
+      state.computerDifficulty = Math.max(800, Math.min(2400, state.computerDifficulty + change));
+    },
   },
 });
 
@@ -141,6 +147,7 @@ export const {
   updatePreferences,
   login,
   logout,
+  adjustComputerDifficulty,
 } = userSlice.actions;
 
 export default userSlice.reducer;

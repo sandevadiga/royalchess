@@ -12,6 +12,7 @@ interface ProfileCardProps {
   wins: number;
   favoriteColor: string;
   theme: string;
+  computerDifficulty?: number;
   onEdit: () => void;
 }
 
@@ -23,6 +24,7 @@ function ProfileCard({
   wins,
   favoriteColor,
   theme,
+  computerDifficulty,
   onEdit,
 }: ProfileCardProps) {
   return (
@@ -37,7 +39,7 @@ function ProfileCard({
       <View style={styles.statsRow}>
         <View style={styles.stat}>
           <Text style={styles.statValue}>{rating}</Text>
-          <Text style={styles.statLabel}>Rating</Text>
+          <Text style={styles.statLabel}>Your Rating</Text>
         </View>
         <View style={styles.stat}>
           <Text style={styles.statValue}>{gamesPlayed}</Text>
@@ -48,6 +50,13 @@ function ProfileCard({
           <Text style={styles.statLabel}>Wins</Text>
         </View>
       </View>
+      
+      {computerDifficulty !== undefined && (
+        <View style={styles.aiDifficulty}>
+          <Text style={styles.aiLabel}>AI Difficulty: </Text>
+          <Text style={styles.aiValue}>{computerDifficulty}</Text>
+        </View>
+      )}
       
       <View style={styles.preferences}>
         <Text style={styles.prefLabel}>
@@ -119,6 +128,20 @@ const styles = StyleSheet.create({
   editButton: {
     borderRadius: 25,
     paddingVertical: 12,
+  },
+  aiDifficulty: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  aiLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  aiValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FF6B35',
   },
 });
 

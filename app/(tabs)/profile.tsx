@@ -45,6 +45,7 @@ export default function ProfileScreen() {
         wins={user.statistics.wins}
         favoriteColor={user.preferences.favoriteColor}
         theme={theme.current.mode}
+        computerDifficulty={user.computerDifficulty}
         onEdit={handleOpenModal}
       />
 

@@ -15,8 +15,15 @@ export default function RootLayout() {
           persistor={persistor}
         >
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="chess-game" 
+                options={{ 
+                  title: 'Chess Game',
+                  headerBackTitle: 'Home'
+                }} 
+              />
             </Stack>
           </GestureHandlerRootView>
         </PersistGate>

@@ -31,7 +31,7 @@ interface GameState {
     status: 'playing' | 'checkmate' | 'stalemate' | 'draw' | 'resigned';
     playerColor: 'white' | 'black';
     opponentType: 'computer' | 'human';
-    difficulty: 1 | 2 | 3 | 4 | 5;
+    difficulty: number; // ELO rating 800-2400
     timeControl: {
       initial: number;
       increment: number;
@@ -63,7 +63,7 @@ const initialState: GameState = {
     status: 'playing',
     playerColor: 'white',
     opponentType: 'computer',
-    difficulty: 3,
+    difficulty: 1200,
     timeControl: {
       initial: 600,
       increment: 0,
@@ -91,7 +91,7 @@ const gameSlice = createSlice({
   reducers: {
     startNewGame: (state, action: PayloadAction<{ 
       playerColor: 'white' | 'black'; 
-      difficulty: 1 | 2 | 3 | 4 | 5;
+      difficulty: number; // ELO rating 800-2400
       opponentType: 'computer' | 'human';
       timeControl?: 'blitz' | 'rapid' | 'classical' | 'timeless';
     }>) => {

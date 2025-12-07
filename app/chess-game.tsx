@@ -4,18 +4,19 @@ import { Chess } from 'chess.js';
 import Chessboard from 'react-native-chessboard';
 import { useLocalSearchParams } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../services/hooks';
-import { makeMove, updateGameState, startNewGame, updateTimer } from '../services/game/gameSlice';
+import { makeMove, updateGameState, startNewGame, updateTimer, endGame } from '../services/game/gameSlice';
+import { adjustComputerDifficulty, updateStatistics } from '../services/user/userSlice';
 import PlayerInfo from '../components/game/PlayerInfo';
 
 export default function ChessGameScreen() {
   const params = useLocalSearchParams();
   const color = params.color || 'white';
-  const difficulty = params.difficulty || '3';
+  const difficulty = params.difficulty;
   const timeControl = params.timeControl || 'blitz';
   
   // Validate parameters
   const validColor = ['white', 'black'].includes(color as string) ? color : 'white';
-  const validDifficulty = Math.max(1, Math.min(5, Number(difficulty) || 3));
+  const validDifficulty = Math.max(800, Math.min(2400, finalDifficulty));
   
   const timeControlLabel = useMemo(() => {
     const labels = {
@@ -32,13 +33,17 @@ export default function ChessGameScreen() {
   const game = useAppSelector(state => state.game);
   const dispatch = useAppDispatch();
   
+  // Use adaptive difficulty if not specified
+  const finalDifficulty = difficulty ? Number(difficulty) : user.computerDifficulty;
+  
   const [chess] = useState(new Chess());
   const [fen, setFen] = useState(chess.fen());
   const [moveTimer, setMoveTimer] = useState(30);
+  const [gameEnded, setGameEnded] = useState(false);
   useEffect(() => {
     dispatch(startNewGame({
       playerColor: validColor as 'white' | 'black',
-      difficulty: validDifficulty as 1 | 2 | 3 | 4 | 5,
+      difficulty: validDifficulty,
       opponentType: 'computer',
       timeControl: timeControl as 'blitz' | 'rapid' | 'classical' | 'timeless',
     }));
@@ -70,7 +75,17 @@ export default function ChessGameScreen() {
   
 
   const playerRating = useMemo(() => user.rating.current, [user.rating.current]);
-  const computerRating = useMemo(() => 1000 + (validDifficulty - 1) * 200, [validDifficulty]);
+  const computerRating = useMemo(() => validDifficulty, [validDifficulty]);
+
+  const handleGameEnd = useCallback((result: 'win' | 'loss' | 'draw') => {
+    if (gameEnded) return;
+    setGameEnded(true);
+    
+    const status = chess.isCheckmate() ? 'checkmate' : chess.isStalemate() ? 'stalemate' : 'draw';
+    dispatch(endGame({ status, result }));
+    dispatch(updateStatistics(result));
+    dispatch(adjustComputerDifficulty(result));
+  }, [chess, dispatch, gameEnded]);
 
   const onMove = useCallback((moveData: any) => {
     try {
@@ -79,7 +94,6 @@ export default function ChessGameScreen() {
         const newFen = chess.fen();
         setFen(newFen);
         
-        // Dispatch to Redux
         dispatch(makeMove({
           from: move.from,
           to: move.to,
@@ -95,19 +109,28 @@ export default function ChessGameScreen() {
           pgn: chess.pgn(),
         }));
         
-        // Reset move timer for timeless games
         if (timeControl === 'timeless') {
           setMoveTimer(30);
+        }
+        
+        // Check game end
+        if (chess.isCheckmate()) {
+          handleGameEnd(chess.turn() === validColor ? 'loss' : 'win');
+        } else if (chess.isStalemate() || chess.isDraw()) {
+          handleGameEnd('draw');
         }
       }
     } catch (error) {
       console.log('Invalid move:', error);
     }
-  }, [chess, dispatch, timeControl]);
+  }, [chess, dispatch, timeControl, handleGameEnd, validColor]);
 
   const difficultyLabel = useMemo(() => {
-    const labels = ['Beginner', 'Easy', 'Medium', 'Hard', 'Expert'];
-    return labels[validDifficulty - 1] || 'Medium';
+    if (validDifficulty < 1000) return 'Beginner';
+    if (validDifficulty < 1400) return 'Intermediate';
+    if (validDifficulty < 1800) return 'Advanced';
+    if (validDifficulty < 2200) return 'Expert';
+    return 'Master';
   }, [validDifficulty]);
 
   const opponentTime = useMemo(() => validColor === 'white' 
@@ -125,8 +148,7 @@ export default function ChessGameScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Chess Game vs Computer</Text>
-      <Text style={styles.gameInfo}>Playing as {validColor} • {difficultyLabel} • {timeControlLabel}</Text>
+      <Text style={styles.gameInfo}>Playing as {validColor} • {difficultyLabel} ({validDifficulty}) • {timeControlLabel}</Text>
       {game.current.moves.length > 0 && (
         <Text style={styles.lastMove}>
           Moves: {movesDisplay}
@@ -170,12 +192,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
   },
   gameInfo: {
     fontSize: 16,
