@@ -62,7 +62,7 @@ export const handlePlayerMove = (
  */
 export const handleComputerMove = (
   config: GameEngineConfig,
-  onSuccess: (fen: string, captured?: string) => void,
+  onSuccess: (fen: string, captured?: string, move?: MoveData) => void,
   onGameEnd: (result: GameResult) => void
 ): boolean => {
   const { chess, dispatch, playerColor, difficulty } = config;
@@ -104,7 +104,7 @@ export const handleComputerMove = (
   }
   
   // Notify success
-  onSuccess(result.fen, result.captured);
+  onSuccess(result.fen, result.captured, result.move);
   return true;
 };
 

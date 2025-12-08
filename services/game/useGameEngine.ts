@@ -18,6 +18,7 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
   const [chess] = useState(() => new Chess());
   const [fen, setFen] = useState(chess.fen());
   const [gameEnded, setGameEnded] = useState(false);
+  const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
   const [capturedPieces, setCapturedPieces] = useState<{ white: string[]; black: string[] }>({
     white: [],
     black: []
@@ -67,6 +68,7 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
       moveInput,
       (newFen, captured) => {
         console.log('✅ Player move success, new FEN:', newFen);
+        setLastMove({ from: moveInput.from, to: moveInput.to });
         setFen(newFen);
         if (captured) {
           setCapturedPieces(prev => ({
@@ -109,8 +111,11 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
         console.log('🤖 Executing computer move...');
         handleComputerMove(
           engineConfig,
-          (newFen, captured) => {
+          (newFen, captured, move) => {
             console.log('✅ Computer move success, new FEN:', newFen);
+            if (move) {
+              setLastMove({ from: move.from, to: move.to });
+            }
             setFen(newFen);
             if (captured) {
               setCapturedPieces(prev => ({
@@ -165,6 +170,7 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
     chess,
     gameEnded,
     capturedPieces,
-    onPlayerMove
+    onPlayerMove,
+    lastMove
   };
 };

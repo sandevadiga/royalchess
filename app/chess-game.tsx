@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Chessboard from 'react-native-chessboard';
 import AdBanner from '../components/common/AdBanner';
@@ -49,7 +49,8 @@ export default function ChessGameScreen() {
     timeControl: timeControl as TimeControlType
   }), [validatedColor, validDifficulty, timeControl]);
   
-  const { fen, chess, gameEnded, capturedPieces, onPlayerMove } = useGameEngine(gameEngineProps);
+  const { fen, chess, gameEnded, capturedPieces, onPlayerMove, lastMove } = useGameEngine(gameEngineProps);
+  const [boardSize, setBoardSize] = useState(0);
 
   // Handle game end
   useEffect(() => {
@@ -175,14 +176,40 @@ export default function ChessGameScreen() {
       />
 
 
-      <Chessboard
-        key={fen}
-        fen={fen}
-        onMove={(move) => onPlayerMove(move.move)}
-        gestureEnabled={chess.turn() === validatedColor.charAt(0)}
-        colors={boardColors}
-        durations={{ move: 200 }}
-      />
+      <View onLayout={(e) => setBoardSize(e.nativeEvent.layout.width)}>
+        <Chessboard
+          key={fen}
+          fen={fen}
+          onMove={(move) => onPlayerMove(move.move)}
+          gestureEnabled={chess.turn() === validatedColor.charAt(0)}
+          colors={boardColors}
+          durations={{ move: 200 }}
+        />
+        {lastMove && boardSize > 0 && (
+          <View style={styles.highlightContainer} pointerEvents="none">
+            {['from', 'to'].map((type) => {
+              const square = lastMove[type as 'from' | 'to'];
+              const file = square.charCodeAt(0) - 97;
+              const rank = 8 - parseInt(square[1]);
+              const squareSize = boardSize / 8;
+              return (
+                <View
+                  key={type}
+                  style={[
+                    styles.highlight,
+                    {
+                      left: file * squareSize,
+                      top: rank * squareSize,
+                      width: squareSize,
+                      height: squareSize,
+                    }
+                  ]}
+                />
+              );
+            })}
+          </View>
+        )}
+      </View>
 
 
       <PlayerInfo
@@ -241,5 +268,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#555',
+  },
+  highlightContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  highlight: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 255, 0, 0.4)',
   },
 });
