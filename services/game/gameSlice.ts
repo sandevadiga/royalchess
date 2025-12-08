@@ -28,7 +28,7 @@ interface GameState {
     pgn: string;
     moves: Move[];
     turn: 'white' | 'black';
-    status: 'playing' | 'checkmate' | 'stalemate' | 'draw' | 'resigned';
+    status: 'playing' | 'checkmate' | 'stalemate' | 'draw' | 'resigned' | 'timeout';
     playerColor: 'white' | 'black';
     opponentType: 'computer' | 'human';
     difficulty: number; // ELO rating 800-2400
@@ -160,7 +160,7 @@ const gameSlice = createSlice({
       }
     },
     endGame: (state, action: PayloadAction<{ 
-      status: 'checkmate' | 'stalemate' | 'draw' | 'resigned';
+      status: 'checkmate' | 'stalemate' | 'draw' | 'resigned' | 'timeout';
       result: 'win' | 'loss' | 'draw';
     }>) => {
       try {

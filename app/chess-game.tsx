@@ -1,12 +1,14 @@
-import { View, Text, StyleSheet, Alert, BackHandler, Platform } from 'react-native';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Chess } from 'chess.js';
+import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
+import { useEffect, useCallback, useMemo } from 'react';
 import Chessboard from 'react-native-chessboard';
-import { useLocalSearchParams, router, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../services/hooks';
-import { makeMove, updateGameState, startNewGame, updateTimer, endGame } from '../services/game/gameSlice';
+import { endGame } from '../services/game/gameSlice';
 import { adjustComputerDifficulty, updateStatistics } from '../services/user/userSlice';
 import PlayerInfo from '../components/game/PlayerInfo';
+import { useGameEngine } from '../services/game/useGameEngine';
+import { getDifficultyLabel } from '../utils/computerAI';
+import { TimeControlType } from '../utils/gameRules';
 
 export default function ChessGameScreen() {
   const params = useLocalSearchParams();
@@ -15,8 +17,8 @@ export default function ChessGameScreen() {
   const timeControl = params.timeControl || 'blitz';
   
   // Validate parameters
-  const validColor = ['white', 'black'].includes(color as string) ? color : 'white';
-  const validDifficulty = Math.max(800, Math.min(2400, finalDifficulty));
+  const validColor = (Array.isArray(color) ? color[0] : color) as string;
+  const validatedColor = ['white', 'black'].includes(validColor) ? validColor : 'white';
   
   const timeControlLabel = useMemo(() => {
     const labels = {
@@ -34,14 +36,55 @@ export default function ChessGameScreen() {
   const dispatch = useAppDispatch();
   
   // Use adaptive difficulty if not specified
-  const finalDifficulty = difficulty ? Number(difficulty) : user.computerDifficulty;
+  const finalDifficulty = difficulty ? Number(difficulty) : (user.computerDifficulty || 1200);
+  const validDifficulty = Math.max(800, Math.min(2400, finalDifficulty));
   
   const navigation = useNavigation();
-  const [chess] = useState(new Chess());
-  const [fen, setFen] = useState(chess.fen());
-  const [moveTimer, setMoveTimer] = useState(30);
-  const [gameEnded, setGameEnded] = useState(false);
   
+  // Use game engine hook
+  const { fen, chess, gameEnded, capturedPieces, onPlayerMove } = useGameEngine({
+    playerColor: validatedColor as 'white' | 'black',
+    difficulty: validDifficulty,
+    timeControl: timeControl as TimeControlType
+  });
+  
+  // Handle game end
+  useEffect(() => {
+    if (gameEnded && game.current.status !== 'playing') {
+      const getTitle = () => {
+        if (game.current.status === 'checkmate') return 'Checkmate!';
+        if (game.current.status === 'stalemate') return 'Stalemate!';
+        if (game.current.status === 'timeout') return 'Time Out!';
+        if (game.current.status === 'resigned') return 'Game Resigned';
+        return 'Game Over';
+      };
+      
+      const getMessage = () => {
+        const lastMove = game.current.moves[game.current.moves.length - 1];
+        if (game.current.status === 'checkmate') {
+          return lastMove ? `You ${lastMove.piece === 'k' ? 'lost' : 'won'} by checkmate!` : 'Game ended by checkmate';
+        }
+        if (game.current.status === 'timeout') return 'Time expired!';
+        if (game.current.status === 'stalemate') return 'Draw by stalemate';
+        return 'Game has ended';
+      };
+      
+      setTimeout(() => {
+        Alert.alert(
+          getTitle(),
+          getMessage(),
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack()
+            }
+          ]
+        );
+      }, 500);
+    }
+  }, [gameEnded, game.current.status, navigation]);
+  
+  // Handle quit
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
       if (gameEnded) return;
@@ -64,263 +107,125 @@ export default function ChessGameScreen() {
         ]
       );
     });
-    
     return unsubscribe;
   }, [navigation, gameEnded, dispatch]);
-  
-  useEffect(() => {
-    dispatch(startNewGame({
-      playerColor: validColor as 'white' | 'black',
-      difficulty: validDifficulty,
-      opponentType: 'computer',
-      timeControl: timeControl as 'blitz' | 'rapid' | 'classical' | 'timeless',
-    }));
-  }, []);
-  
-  useEffect(() => {
-    if (game.current.status === 'playing') {
-      const timer = setInterval(() => {
-        setMoveTimer(prev => prev <= 1 ? 30 : prev - 1);
-        
-        if (timeControl !== 'timeless') {
-          const currentPlayer = game.current.turn;
-          const currentTime = currentPlayer === 'white' 
-            ? game.current.timeControl.whiteTime 
-            : game.current.timeControl.blackTime;
-          
-          if (currentTime <= 0) {
-            const result = currentPlayer === validColor ? 'loss' : 'win';
-            handleGameEnd(result);
-            return;
-          }
-          
-          dispatch(updateTimer({ 
-            player: currentPlayer, 
-            time: currentTime - 1 
-          }));
-        }
-      }, 1000);
-      
-      return () => clearInterval(timer);
-    }
-  }, [timeControl, game.current.status, validColor, handleGameEnd, dispatch]);
-  
 
   const playerRating = useMemo(() => user.rating.current, [user.rating.current]);
   const computerRating = useMemo(() => validDifficulty, [validDifficulty]);
+  const difficultyLabel = useMemo(() => getDifficultyLabel(validDifficulty), [validDifficulty]);
 
-  const handleGameEnd = useCallback((result: 'win' | 'loss' | 'draw') => {
-    if (gameEnded) return;
-    setGameEnded(true);
-    
-    const status = chess.isCheckmate() ? 'checkmate' : chess.isStalemate() ? 'stalemate' : 'draw';
-    dispatch(endGame({ status, result }));
-    dispatch(updateStatistics(result));
-    dispatch(adjustComputerDifficulty(result));
-  }, [chess, dispatch, gameEnded]);
-
-  useEffect(() => {
-    const currentTurn = chess.turn();
-    const playerTurn = validColor === 'white' ? 'w' : 'b';
-    const isComputerTurn = currentTurn !== playerTurn;
-    
-    console.log('Computer move check:', {
-      status: game.current.status,
-      currentTurn,
-      playerTurn,
-      isComputerTurn,
-      fen
-    });
-    
-    if (game.current.status === 'playing' && isComputerTurn && !gameEnded) {
-      console.log('Computer should move now!');
-      const timeout = setTimeout(() => {
-        console.log('Computer making move...');
-        const moves = chess.moves({ verbose: true });
-        console.log('Available moves:', moves.length);
-        
-        if (moves.length > 0) {
-          const randomMove = moves[Math.floor(Math.random() * moves.length)];
-          console.log('Selected move:', randomMove);
-          const move = chess.move(randomMove);
-          
-          if (move) {
-            console.log('Move executed:', move.san);
-            const newFen = chess.fen();
-            setFen(newFen);
-            
-            dispatch(makeMove({
-              from: move.from,
-              to: move.to,
-              piece: move.piece,
-              captured: move.captured,
-              promotion: move.promotion,
-              san: move.san,
-              timestamp: new Date().toISOString(),
-            }));
-            
-            dispatch(updateGameState({
-              fen: newFen,
-              pgn: chess.pgn(),
-            }));
-            
-            if (chess.isCheckmate()) {
-              handleGameEnd('loss');
-            } else if (chess.isStalemate() || chess.isDraw()) {
-              handleGameEnd('draw');
-            }
-          }
-        }
-      }, 1000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [fen, game.current.status, validColor, chess, dispatch, handleGameEnd, gameEnded]);
-
-  const onMove = useCallback((moveData: any) => {
-    if (chess.turn() !== validColor.charAt(0)) return;
-    
-    try {
-      const move = chess.move(moveData.move);
-      if (move) {
-        const newFen = chess.fen();
-        setFen(newFen);
-        
-        dispatch(makeMove({
-          from: move.from,
-          to: move.to,
-          piece: move.piece,
-          captured: move.captured,
-          promotion: move.promotion,
-          san: move.san,
-          timestamp: new Date().toISOString(),
-        }));
-        
-        dispatch(updateGameState({
-          fen: newFen,
-          pgn: chess.pgn(),
-        }));
-        
-        if (timeControl === 'timeless') {
-          setMoveTimer(30);
-        }
-        
-        if (chess.isCheckmate()) {
-          handleGameEnd('win');
-        } else if (chess.isStalemate() || chess.isDraw()) {
-          handleGameEnd('draw');
-        }
-      }
-    } catch (error) {
-      console.log('Invalid move:', error);
-    }
-  }, [chess, dispatch, timeControl, handleGameEnd, validColor]);
-
-  const difficultyLabel = useMemo(() => {
-    if (validDifficulty < 1000) return 'Beginner';
-    if (validDifficulty < 1400) return 'Intermediate';
-    if (validDifficulty < 1800) return 'Advanced';
-    if (validDifficulty < 2200) return 'Expert';
-    return 'Master';
-  }, [validDifficulty]);
-
-  const opponentTime = useMemo(() => validColor === 'white' 
+  const opponentTime = useMemo(() => validatedColor === 'white' 
     ? game.current.timeControl.blackTime 
-    : game.current.timeControl.whiteTime, [validColor, game.current.timeControl.blackTime, game.current.timeControl.whiteTime]);
+    : game.current.timeControl.whiteTime, [validatedColor, game.current.timeControl.blackTime, game.current.timeControl.whiteTime]);
   
-  const playerTime = useMemo(() => validColor === 'white' 
+  const playerTime = useMemo(() => validatedColor === 'white' 
     ? game.current.timeControl.whiteTime 
-    : game.current.timeControl.blackTime, [validColor, game.current.timeControl.whiteTime, game.current.timeControl.blackTime]);
+    : game.current.timeControl.blackTime, [validatedColor, game.current.timeControl.whiteTime, game.current.timeControl.blackTime]);
 
   const movesDisplay = useMemo(() => 
     game.current.moves.map(move => move.san).join(', '),
     [game.current.moves]
   );
+  
+  const pieceToIcon = (piece: string) => {
+    const icons: {[key: string]: string} = {
+      'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚'
+    };
+    return icons[piece.toLowerCase()] || piece;
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.gameInfo}>Playing as {validColor} • {difficultyLabel} ({validDifficulty}) • {timeControlLabel}</Text>
-      {game.current.moves.length > 0 && (
-        <Text style={styles.lastMove}>
-          Moves: {movesDisplay}
-        </Text>
-      )}
-      <Text style={styles.moveTimer}>Move Timer: {moveTimer}s</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <Text style={styles.gameInfo}>{validatedColor} • {difficultyLabel} ({validDifficulty}) • {timeControlLabel}</Text>
       
-      <View style={styles.boardContainer}>
-        <PlayerInfo
-          name="Computer"
-          rating={computerRating}
-          timeRemaining={timeControl !== 'timeless' ? opponentTime : undefined}
-          moveTime={moveTimer}
-          isActive={game.current.turn !== validColor}
-          isOpponent={true}
-          style={styles.opponentInfo}
-        />
-        
-        <Chessboard
-          key={fen}
-          fen={fen}
-          onMove={onMove}
-          size={300}
-          gestureEnabled={chess.turn() === validColor.charAt(0)}
-        />
-        
-        <PlayerInfo
-          name={`${user.profile.name} (${validColor})`}
-          rating={playerRating}
-          timeRemaining={timeControl !== 'timeless' ? playerTime : undefined}
-          moveTime={moveTimer}
-          isActive={game.current.turn === validColor}
-          isOpponent={false}
-          style={styles.playerInfo}
-        />
+      <View style={styles.capturedRow}>
+        <View style={styles.capturedBox}>
+          <Text style={styles.capturedLabel}>You</Text>
+          <Text style={styles.capturedPieces}>{capturedPieces.white.map(pieceToIcon).join(' ') || '-'}</Text>
+        </View>
+        <View style={styles.capturedBox}>
+          <Text style={styles.capturedLabel}>Computer</Text>
+          <Text style={styles.capturedPieces}>{capturedPieces.black.map(pieceToIcon).join(' ') || '-'}</Text>
+        </View>
       </View>
-    </View>
+      
+      <PlayerInfo
+        name="Computer"
+        rating={computerRating}
+        timeRemaining={timeControl !== 'timeless' ? opponentTime : undefined}
+        isActive={game.current.turn !== validatedColor}
+        isOpponent={true}
+      />
+      
+      <Chessboard
+        key={fen}
+        fen={fen}
+        onMove={(move) => onPlayerMove(move.move)}
+        gestureEnabled={chess.turn() === validatedColor.charAt(0)}
+      />
+      
+      <PlayerInfo
+        name={user.profile.name}
+        rating={playerRating}
+        timeRemaining={timeControl !== 'timeless' ? playerTime : undefined}
+        isActive={game.current.turn === validatedColor}
+        isOpponent={false}
+      />
+      
+      {game.current.moves.length > 0 && (
+        <Text style={styles.lastMove}>{movesDisplay}</Text>
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#fff',
   },
+  scrollContent: {
+    padding: 12,
+    alignItems: 'center',
+  },
   gameInfo: {
-    fontSize: 16,
+    fontSize: 13,
     textAlign: 'center',
     color: '#666',
-    marginBottom: 20,
+    marginBottom: 4,
   },
-  opponentInfo: {
-    marginBottom: 10,
-    alignSelf: 'flex-start',
+
+  capturedRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 8,
   },
-  playerInfo: {
-    marginTop: 10,
-    alignSelf: 'flex-end',
-  },
-  boardContainer: {
+  capturedBox: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
+    padding: 8,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 6,
+    marginHorizontal: 4,
   },
-  moveTimer: {
-    fontSize: 18,
+  capturedLabel: {
+    fontSize: 10,
+    color: '#666',
+    marginBottom: 2,
+  },
+  capturedPieces: {
+    fontSize: 14,
     fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#FF6B35',
-    marginBottom: 10,
+    color: '#333',
   },
   lastMove: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
     textAlign: 'center',
     color: '#333',
-    marginBottom: 10,
+    marginTop: 8,
     backgroundColor: '#f0f0f0',
-    padding: 8,
+    padding: 6,
     borderRadius: 5,
+    width: '100%',
   },
 });

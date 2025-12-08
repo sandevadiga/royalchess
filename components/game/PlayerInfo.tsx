@@ -1,8 +1,7 @@
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { memo, useMemo } from 'react';
-import Avatar from '../ui/Avatar';
+import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../../common/styles/themes/useTheme';
-import { SPACING, FONT, LAYOUT } from '../../constants';
+import Avatar from '../ui/Avatar';
 
 interface PlayerInfoProps {
   name: string;
@@ -14,17 +13,17 @@ interface PlayerInfoProps {
   style?: ViewStyle;
 }
 
-function PlayerInfo({ 
-  name, 
-  rating, 
-  timeRemaining, 
+function PlayerInfo({
+  name,
+  rating,
+  timeRemaining,
   moveTime,
   isActive = false,
   isOpponent = false,
-  style 
+  style
 }: PlayerInfoProps) {
   const { theme } = useTheme();
-  
+
   const formattedTime = useMemo(() => {
     if (timeRemaining === undefined) return null;
     const mins = Math.floor(timeRemaining / 60);
@@ -34,20 +33,26 @@ function PlayerInfo({
 
   return (
     <View style={[
-      styles.container, 
+      styles.container,
       isOpponent ? styles.opponent : styles.player,
       style
     ]}>
-      <Avatar name={name} size={LAYOUT.AVATAR_SIZE_DEFAULT} isActive={isActive} />
+      <Avatar name={name} size={34} isActive={isActive} />
       <View style={styles.details}>
-        <Text style={[styles.name, { color: theme.colors.textSecondary }]}>{name}</Text>
-        <Text style={[styles.rating, { color: theme.colors.primary }]}>{rating}</Text>
-        {formattedTime && (
-          <Text style={[styles.time, { color: theme.colors.primary }]}>{formattedTime}</Text>
-        )}
-        {moveTime !== undefined && (
-          <Text style={[styles.moveTime, { color: theme.colors.warning }]}>Move: {moveTime}s</Text>
-        )}
+        <View style={styles.nameRow}>
+          <Text style={[styles.name, { color: theme.colors.textSecondary }]} numberOfLines={1}>{name}</Text>
+          <View style={[styles.ratingTag, { backgroundColor: theme.colors.primary }]}>
+            <Text style={styles.ratingText}>{rating}</Text>
+          </View>
+        </View>
+        <View style={styles.timeRow}>
+          {formattedTime && (
+            <Text style={[styles.time, { color: theme.colors.primary }]}>{formattedTime}</Text>
+          )}
+          {moveTime !== undefined && isActive && (
+            <Text style={[styles.moveTime, { color: theme.colors.textSecondary }]}> • {moveTime}s</Text>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -58,6 +63,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
+    height: 50,
+    paddingHorizontal: 8,
+    backgroundColor: '#e88484ff',
+    borderRadius: 6,
+    marginVertical: 4,
   },
   opponent: {
     justifyContent: 'flex-start',
@@ -67,25 +77,42 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   details: {
-    marginHorizontal: SPACING.SM,
+    flex: 1,
+    marginHorizontal: 8,
+    justifyContent: 'center',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   name: {
-    fontSize: FONT.MD,
-    marginBottom: 5,
+    fontSize: 13,
+    fontWeight: '600',
+    marginRight: 6,
   },
-  rating: {
-    fontSize: FONT.XL,
+  ratingTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  ratingText: {
+    fontSize: 10,
     fontWeight: 'bold',
+    color: '#fff',
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   time: {
-    fontSize: FONT.BASE,
+    fontSize: 14,
     fontWeight: 'bold',
-    marginTop: 5,
+    letterSpacing: 1,
   },
   moveTime: {
-    fontSize: FONT.MD,
+    fontSize: 11,
     fontWeight: '600',
-    marginTop: 5,
   },
 });
 
