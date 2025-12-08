@@ -52,6 +52,24 @@ export default function ChessGameScreen() {
   const { fen, chess, gameEnded, capturedPieces, onPlayerMove, lastMove } = useGameEngine(gameEngineProps);
   const [boardSize, setBoardSize] = useState(0);
 
+  // Find king position if in check
+  const kingInCheck = useMemo(() => {
+    if (!chess.inCheck()) return null;
+    const board = chess.board();
+    const turn = chess.turn();
+    for (let rank = 0; rank < 8; rank++) {
+      for (let file = 0; file < 8; file++) {
+        const piece = board[rank][file];
+        if (piece && piece.type === 'k' && piece.color === turn) {
+          const fileChar = String.fromCharCode(97 + file);
+          const rankChar = String(8 - rank);
+          return fileChar + rankChar;
+        }
+      }
+    }
+    return null;
+  }, [fen]);
+
   // Handle game end
   useEffect(() => {
     if (gameEnded && game.current.status !== 'playing') {
@@ -185,9 +203,9 @@ export default function ChessGameScreen() {
           colors={boardColors}
           durations={{ move: 200 }}
         />
-        {lastMove && boardSize > 0 && (
+        {boardSize > 0 && (
           <View style={styles.highlightContainer} pointerEvents="none">
-            {['from', 'to'].map((type) => {
+            {lastMove && ['from', 'to'].map((type) => {
               const square = lastMove[type as 'from' | 'to'];
               const file = square.charCodeAt(0) - 97;
               const rank = 8 - parseInt(square[1]);
@@ -207,6 +225,19 @@ export default function ChessGameScreen() {
                 />
               );
             })}
+            {kingInCheck && (
+              <View
+                style={[
+                  styles.checkHighlight,
+                  {
+                    left: (kingInCheck.charCodeAt(0) - 97) * (boardSize / 8),
+                    top: (8 - parseInt(kingInCheck[1])) * (boardSize / 8),
+                    width: boardSize / 8,
+                    height: boardSize / 8,
+                  }
+                ]}
+              />
+            )}
           </View>
         )}
       </View>
@@ -279,5 +310,9 @@ const styles = StyleSheet.create({
   highlight: {
     position: 'absolute',
     backgroundColor: 'rgba(255, 255, 0, 0.4)',
+  },
+  checkHighlight: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 0, 0, 0.5)',
   },
 });
