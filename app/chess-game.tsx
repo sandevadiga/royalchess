@@ -43,11 +43,13 @@ export default function ChessGameScreen() {
   const navigation = useNavigation();
 
   // Use game engine hook
-  const { fen, chess, gameEnded, capturedPieces, onPlayerMove } = useGameEngine({
+  const gameEngineProps = useMemo(() => ({
     playerColor: validatedColor as 'white' | 'black',
     difficulty: validDifficulty,
     timeControl: timeControl as TimeControlType
-  });
+  }), [validatedColor, validDifficulty, timeControl]);
+  
+  const { fen, chess, gameEnded, capturedPieces, onPlayerMove } = useGameEngine(gameEngineProps);
 
   // Handle game end
   useEffect(() => {
@@ -115,13 +117,13 @@ export default function ChessGameScreen() {
   const computerRating = useMemo(() => validDifficulty, [validDifficulty]);
   const difficultyLabel = useMemo(() => getDifficultyLabel(validDifficulty), [validDifficulty]);
 
-  const opponentTime = useMemo(() => validatedColor === 'white'
+  const opponentTime = validatedColor === 'white'
     ? game.current.timeControl.blackTime
-    : game.current.timeControl.whiteTime, [validatedColor, game.current.timeControl.blackTime, game.current.timeControl.whiteTime]);
+    : game.current.timeControl.whiteTime;
 
-  const playerTime = useMemo(() => validatedColor === 'white'
+  const playerTime = validatedColor === 'white'
     ? game.current.timeControl.whiteTime
-    : game.current.timeControl.blackTime, [validatedColor, game.current.timeControl.whiteTime, game.current.timeControl.blackTime]);
+    : game.current.timeControl.blackTime;
 
   const lastMoves = useMemo(() => {
     const moves = game.current.moves;
@@ -147,6 +149,18 @@ export default function ChessGameScreen() {
       .join(' ');
   };
 
+  const boardColors = useMemo(() => {
+    const schemes = {
+      classic: { white: '#f0d9b5', black: '#b58863' },
+      blue: { white: '#dee3e6', black: '#8ca2ad' },
+      green: { white: '#ffffdd', black: '#86a666' },
+      purple: { white: '#e8d5f0', black: '#9f7ab8' },
+      wood: { white: '#f4e4c1', black: '#a67c52' },
+    };
+    const scheme = user.preferences.boardColorScheme as keyof typeof schemes;
+    return schemes[scheme] || schemes.classic;
+  }, [user.preferences.boardColorScheme]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <AdBanner />
@@ -166,6 +180,8 @@ export default function ChessGameScreen() {
         fen={fen}
         onMove={(move) => onPlayerMove(move.move)}
         gestureEnabled={chess.turn() === validatedColor.charAt(0)}
+        colors={boardColors}
+        durations={{ move: 200 }}
       />
 
 

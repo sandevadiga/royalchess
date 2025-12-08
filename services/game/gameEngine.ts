@@ -67,23 +67,35 @@ export const handleComputerMove = (
 ): boolean => {
   const { chess, dispatch, playerColor, difficulty } = config;
   
+  console.log('🤖 handleComputerMove called:', { turn: chess.turn(), difficulty });
+  
   // Generate computer move
   const computerMove = generateComputerMove(chess, difficulty);
+  console.log('🎲 Generated move:', computerMove);
   
-  if (!computerMove) return false;
+  if (!computerMove) {
+    console.log('❌ No computer move generated!');
+    return false;
+  }
   
   // Execute move
   const result = executeMove(chess, computerMove);
+  console.log('📋 Move execution result:', { success: result.success, move: result.move });
   
-  if (!result.success || !result.move) return false;
+  if (!result.success || !result.move) {
+    console.log('❌ Move execution failed!');
+    return false;
+  }
   
   // Update Redux
   dispatch(makeMove(result.move));
   dispatch(updateGameState({ fen: result.fen, pgn: result.pgn }));
+  console.log('✅ Redux updated with computer move');
   
   // Check game end
   const gameEnd = checkGameEnd(chess, playerColor);
   if (gameEnd.ended && gameEnd.result) {
+    console.log('🏁 Game ended:', gameEnd);
     dispatch(endGame({ status: gameEnd.status, result: gameEnd.result }));
     dispatch(updateStatistics(gameEnd.result));
     dispatch(adjustComputerDifficulty(gameEnd.result));
@@ -107,22 +119,14 @@ export const handleTimerTick = (
   playerColor: 'white' | 'black',
   onTimeout: (result: GameResult) => void
 ) => {
-  console.log('⏰ handleTimerTick:', { currentPlayer, whiteTime, blackTime, playerColor });
-  
-  // Decrement current player's time
   const newTime = currentPlayer === 'white' ? whiteTime - 1 : blackTime - 1;
-  console.log('⏰ New time:', newTime);
   
   if (newTime < 0) {
-    console.log('⏰ TIMEOUT! Time expired for', currentPlayer);
-    // Timeout
     const timeoutCheck = checkTimeout(
       currentPlayer === 'white' ? 0 : whiteTime,
       currentPlayer === 'black' ? 0 : blackTime,
       playerColor
     );
-    
-    console.log('⏰ Timeout check result:', timeoutCheck);
     
     if (timeoutCheck.timeout && timeoutCheck.result) {
       dispatch(endGame({ status: 'timeout', result: timeoutCheck.result }));
@@ -133,7 +137,5 @@ export const handleTimerTick = (
     return;
   }
   
-  // Update timer
-  console.log('⏰ Updating timer for', currentPlayer, 'to', newTime);
   dispatch(updateTimer({ player: currentPlayer, time: Math.max(0, newTime) }));
 };

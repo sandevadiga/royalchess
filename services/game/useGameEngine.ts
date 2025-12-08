@@ -58,6 +58,7 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
   
   // Handle player move
   const onPlayerMove = useCallback((moveInput: any) => {
+    console.log('🎮 Player Move:', { moveInput, gameEnded, turn: chess.turn(), playerColor });
     if (gameEnded) return;
     if (chess.turn() !== playerColor.charAt(0)) return;
     
@@ -65,6 +66,7 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
       engineConfig,
       moveInput,
       (newFen, captured) => {
+        console.log('✅ Player move success, new FEN:', newFen);
         setFen(newFen);
         if (captured) {
           setCapturedPieces(prev => ({
@@ -79,17 +81,36 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
   
   // Handle computer move
   useEffect(() => {
-    if (gameEnded) return;
-    if (game.current.status !== 'playing') return;
+    console.log('🤖 Computer Move Effect:', { 
+      gameEnded, 
+      status: game.current.status, 
+      chessTurn: chess.turn(), 
+      playerColor,
+      fen 
+    });
+    
+    if (gameEnded) {
+      console.log('❌ Computer move blocked: game ended');
+      return;
+    }
+    if (game.current.status !== 'playing') {
+      console.log('❌ Computer move blocked: status not playing');
+      return;
+    }
     
     const currentTurn = chess.turn();
     const isComputerTurn = currentTurn !== playerColor.charAt(0);
     
+    console.log('🔍 Turn check:', { currentTurn, playerColor, isComputerTurn });
+    
     if (isComputerTurn) {
+      console.log('⏳ Computer will move in 1 second...');
       const timeout = setTimeout(() => {
+        console.log('🤖 Executing computer move...');
         handleComputerMove(
           engineConfig,
           (newFen, captured) => {
+            console.log('✅ Computer move success, new FEN:', newFen);
             setFen(newFen);
             if (captured) {
               setCapturedPieces(prev => ({
@@ -103,8 +124,10 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
       }, 1000);
       
       return () => clearTimeout(timeout);
+    } else {
+      console.log('⏸️ Not computer turn, waiting for player...');
     }
-  }, [fen, game.current.status, gameEnded, chess, playerColor, engineConfig, onGameEnd]);
+  }, [fen, game.current.status, gameEnded, playerColor, difficulty, engineConfig, onGameEnd]);
   
   // Timer - use ref to get fresh state
   const gameStateRef = useRef(game.current);
@@ -114,26 +137,10 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
   }, [game.current]);
   
   useEffect(() => {
-    console.log('⏱️ Timer Effect:', {
-      gameEnded,
-      status: game.current.status,
-      timeControl
-    });
-    
-    if (gameEnded) {
-      console.log('⏱️ Timer: Game ended, not starting timer');
-      return;
-    }
-    if (game.current.status !== 'playing') {
-      console.log('⏱️ Timer: Game not playing, status:', game.current.status);
-      return;
-    }
-    if (timeControl === 'timeless') {
-      console.log('⏱️ Timer: Timeless mode, no timer');
+    if (gameEnded || game.current.status !== 'playing' || timeControl === 'timeless') {
       return;
     }
     
-    console.log('⏱️ Timer: Starting interval');
     timerRef.current = setInterval(() => {
       const currentState = gameStateRef.current;
       handleTimerTick(
@@ -147,7 +154,6 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
     }, 1000);
     
     return () => {
-      console.log('⏱️ Timer: Cleaning up interval');
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }

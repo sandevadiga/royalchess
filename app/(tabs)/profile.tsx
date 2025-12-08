@@ -22,7 +22,10 @@ export default function ProfileScreen() {
 
   const handleSave = useCallback((data: ProfileData) => {
     dispatch(updateProfile({ name: data.name }));
-    dispatch(updatePreferences({ favoriteColor: data.favoriteColor }));
+    dispatch(updatePreferences({ 
+      favoriteColor: data.favoriteColor,
+      boardColorScheme: data.boardColorScheme 
+    }));
     dispatch(updateTheme({ mode: data.theme }));
     setShowEditModal(false);
   }, [dispatch]);
@@ -31,7 +34,8 @@ export default function ProfileScreen() {
     name: user.profile.name,
     favoriteColor: user.preferences.favoriteColor,
     theme: theme.current.mode,
-  }), [user.profile.name, user.preferences.favoriteColor, theme.current.mode]);
+    boardColorScheme: user.preferences.boardColorScheme,
+  }), [user.profile.name, user.preferences.favoriteColor, theme.current.mode, user.preferences.boardColorScheme]);
 
   return (
     <View style={styles.container}>
@@ -62,14 +66,16 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+    padding: 16,
+    backgroundColor: '#f8f9fa',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
     textAlign: 'center',
-    marginBottom: 20,
-    color: '#333',
+    marginBottom: 16,
+    marginTop: 8,
+    color: '#1a1a1a',
+    letterSpacing: 0.5,
   },
 });

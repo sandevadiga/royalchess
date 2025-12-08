@@ -32,6 +32,7 @@ interface UserState {
     favoriteColor: 'white' | 'black' | 'random';
     preferredTimeControl: string;
     autoPromoteQueen: boolean;
+    boardColorScheme: 'classic' | 'blue' | 'green' | 'purple' | 'wood';
   };
   authentication: {
     isLoggedIn: boolean;
@@ -66,6 +67,7 @@ const initialState: UserState = {
     favoriteColor: 'random',
     preferredTimeControl: '10+0',
     autoPromoteQueen: false,
+    boardColorScheme: 'classic',
   },
   authentication: {
     isLoggedIn: false,
