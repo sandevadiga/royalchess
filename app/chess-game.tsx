@@ -1,12 +1,13 @@
-import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
-import { useEffect, useCallback, useMemo } from 'react';
-import Chessboard from 'react-native-chessboard';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useAppSelector, useAppDispatch } from '../services/hooks';
-import { endGame } from '../services/game/gameSlice';
-import { adjustComputerDifficulty, updateStatistics } from '../services/user/userSlice';
+import { useEffect, useMemo } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Chessboard from 'react-native-chessboard';
+import AdBanner from '../components/common/AdBanner';
 import PlayerInfo from '../components/game/PlayerInfo';
+import { endGame } from '../services/game/gameSlice';
 import { useGameEngine } from '../services/game/useGameEngine';
+import { useAppDispatch, useAppSelector } from '../services/hooks';
+import { adjustComputerDifficulty, updateStatistics } from '../services/user/userSlice';
 import { getDifficultyLabel } from '../utils/computerAI';
 import { TimeControlType } from '../utils/gameRules';
 
@@ -15,39 +16,39 @@ export default function ChessGameScreen() {
   const color = params.color || 'white';
   const difficulty = params.difficulty;
   const timeControl = params.timeControl || 'blitz';
-  
+
   // Validate parameters
   const validColor = (Array.isArray(color) ? color[0] : color) as string;
   const validatedColor = ['white', 'black'].includes(validColor) ? validColor : 'white';
-  
+
   const timeControlLabel = useMemo(() => {
     const labels = {
       blitz: 'Blitz 5min',
-      rapid: 'Rapid 10min', 
+      rapid: 'Rapid 10min',
       classical: 'Classical 30min',
       timeless: 'Timeless'
     };
     return labels[timeControl as keyof typeof labels] || 'Blitz 5min';
   }, [timeControl]);
-  
+
   // Get user data from Redux
   const user = useAppSelector(state => state.user);
   const game = useAppSelector(state => state.game);
   const dispatch = useAppDispatch();
-  
+
   // Use adaptive difficulty if not specified
   const finalDifficulty = difficulty ? Number(difficulty) : (user.computerDifficulty || 1200);
   const validDifficulty = Math.max(800, Math.min(2400, finalDifficulty));
-  
+
   const navigation = useNavigation();
-  
+
   // Use game engine hook
   const { fen, chess, gameEnded, capturedPieces, onPlayerMove } = useGameEngine({
     playerColor: validatedColor as 'white' | 'black',
     difficulty: validDifficulty,
     timeControl: timeControl as TimeControlType
   });
-  
+
   // Handle game end
   useEffect(() => {
     if (gameEnded && game.current.status !== 'playing') {
@@ -58,7 +59,7 @@ export default function ChessGameScreen() {
         if (game.current.status === 'resigned') return 'Game Resigned';
         return 'Game Over';
       };
-      
+
       const getMessage = () => {
         const lastMove = game.current.moves[game.current.moves.length - 1];
         if (game.current.status === 'checkmate') {
@@ -68,7 +69,7 @@ export default function ChessGameScreen() {
         if (game.current.status === 'stalemate') return 'Draw by stalemate';
         return 'Game has ended';
       };
-      
+
       setTimeout(() => {
         Alert.alert(
           getTitle(),
@@ -83,7 +84,7 @@ export default function ChessGameScreen() {
       }, 500);
     }
   }, [gameEnded, game.current.status, navigation]);
-  
+
   // Handle quit
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
@@ -94,8 +95,8 @@ export default function ChessGameScreen() {
         'Do you want to quit? This will count as a loss.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Quit', 
+          {
+            text: 'Quit',
             style: 'destructive',
             onPress: () => {
               dispatch(endGame({ status: 'resigned', result: 'loss' }));
@@ -114,66 +115,78 @@ export default function ChessGameScreen() {
   const computerRating = useMemo(() => validDifficulty, [validDifficulty]);
   const difficultyLabel = useMemo(() => getDifficultyLabel(validDifficulty), [validDifficulty]);
 
-  const opponentTime = useMemo(() => validatedColor === 'white' 
-    ? game.current.timeControl.blackTime 
+  const opponentTime = useMemo(() => validatedColor === 'white'
+    ? game.current.timeControl.blackTime
     : game.current.timeControl.whiteTime, [validatedColor, game.current.timeControl.blackTime, game.current.timeControl.whiteTime]);
-  
-  const playerTime = useMemo(() => validatedColor === 'white' 
-    ? game.current.timeControl.whiteTime 
+
+  const playerTime = useMemo(() => validatedColor === 'white'
+    ? game.current.timeControl.whiteTime
     : game.current.timeControl.blackTime, [validatedColor, game.current.timeControl.whiteTime, game.current.timeControl.blackTime]);
 
-  const movesDisplay = useMemo(() => 
-    game.current.moves.map(move => move.san).join(', '),
-    [game.current.moves]
-  );
-  
+  const lastMoves = useMemo(() => {
+    const moves = game.current.moves;
+    return moves.slice(-10).map((move, idx) => ({
+      number: moves.length - 9 + idx,
+      san: move.san
+    }));
+  }, [game.current.moves]);
+
   const pieceToIcon = (piece: string) => {
-    const icons: {[key: string]: string} = {
+    const icons: { [key: string]: string } = {
       'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚'
     };
     return icons[piece.toLowerCase()] || piece;
   };
 
+  const formatCapturedPieces = (pieces: string[]) => {
+    if (pieces.length === 0) return '-';
+    const counts: { [key: string]: number } = {};
+    pieces.forEach(p => counts[p] = (counts[p] || 0) + 1);
+    return Object.entries(counts)
+      .map(([piece, count]) => `${pieceToIcon(piece)}${count > 1 ? ` x${count}` : ''}`)
+      .join(' ');
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.gameInfo}>{validatedColor} • {difficultyLabel} ({validDifficulty}) • {timeControlLabel}</Text>
-      
-      <View style={styles.capturedRow}>
-        <View style={styles.capturedBox}>
-          <Text style={styles.capturedLabel}>You</Text>
-          <Text style={styles.capturedPieces}>{capturedPieces.white.map(pieceToIcon).join(' ') || '-'}</Text>
-        </View>
-        <View style={styles.capturedBox}>
-          <Text style={styles.capturedLabel}>Computer</Text>
-          <Text style={styles.capturedPieces}>{capturedPieces.black.map(pieceToIcon).join(' ') || '-'}</Text>
-        </View>
-      </View>
-      
+      <AdBanner />
+
       <PlayerInfo
         name="Computer"
         rating={computerRating}
         timeRemaining={timeControl !== 'timeless' ? opponentTime : undefined}
         isActive={game.current.turn !== validatedColor}
         isOpponent={true}
+        capturedPieces={formatCapturedPieces(capturedPieces.black)}
       />
-      
+
+
       <Chessboard
         key={fen}
         fen={fen}
         onMove={(move) => onPlayerMove(move.move)}
         gestureEnabled={chess.turn() === validatedColor.charAt(0)}
       />
-      
+
+
       <PlayerInfo
         name={user.profile.name}
         rating={playerRating}
         timeRemaining={timeControl !== 'timeless' ? playerTime : undefined}
         isActive={game.current.turn === validatedColor}
         isOpponent={false}
+        capturedPieces={formatCapturedPieces(capturedPieces.white)}
       />
-      
+      <AdBanner />
+
       {game.current.moves.length > 0 && (
-        <Text style={styles.lastMove}>{movesDisplay}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.movesScroll}>
+          {lastMoves.map((move, idx) => (
+            <View key={idx} style={styles.moveChip}>
+              <Text style={styles.moveText}>{move.number}.{move.san}</Text>
+            </View>
+          ))}
+        </ScrollView>
       )}
     </ScrollView>
   );
@@ -195,37 +208,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
-  capturedRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+
+  movesScroll: {
     width: '100%',
-    marginBottom: 8,
+    marginTop: 6,
+    maxHeight: 30,
   },
-  capturedBox: {
-    flex: 1,
-    padding: 8,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 6,
-    marginHorizontal: 4,
-  },
-  capturedLabel: {
-    fontSize: 10,
-    color: '#666',
-    marginBottom: 2,
-  },
-  capturedPieces: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  lastMove: {
-    fontSize: 12,
-    textAlign: 'center',
-    color: '#333',
-    marginTop: 8,
+  moveChip: {
     backgroundColor: '#f0f0f0',
-    padding: 6,
-    borderRadius: 5,
-    width: '100%',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  moveText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#555',
   },
 });

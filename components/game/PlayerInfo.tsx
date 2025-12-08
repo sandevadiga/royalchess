@@ -10,6 +10,7 @@ interface PlayerInfoProps {
   moveTime?: number;
   isActive?: boolean;
   isOpponent?: boolean;
+  capturedPieces?: string;
   style?: ViewStyle;
 }
 
@@ -20,6 +21,7 @@ function PlayerInfo({
   moveTime,
   isActive = false,
   isOpponent = false,
+  capturedPieces,
   style
 }: PlayerInfoProps) {
   const { theme } = useTheme();
@@ -34,23 +36,36 @@ function PlayerInfo({
   return (
     <View style={[
       styles.container,
-      isOpponent ? styles.opponent : styles.player,
+      { 
+        backgroundColor: theme.colors.surface,
+        borderColor: isActive ? theme.colors.primary : theme.colors.border || '#E0E0E0',
+      },
+      isActive && styles.activeContainer,
       style
     ]}>
-      <Avatar name={name} size={34} isActive={isActive} />
-      <View style={styles.details}>
-        <View style={styles.nameRow}>
-          <Text style={[styles.name, { color: theme.colors.textSecondary }]} numberOfLines={1}>{name}</Text>
-          <View style={[styles.ratingTag, { backgroundColor: theme.colors.primary }]}>
-            <Text style={styles.ratingText}>{rating}</Text>
+      <Avatar name={name} size={32} isActive={isActive} />
+      
+      <View style={styles.infoSection}>
+        <View style={styles.topRow}>
+          <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={1}>
+            {name}
+          </Text>
+          <View style={[styles.ratingBadge, { backgroundColor: theme.colors.primary + '15' }]}>
+            <Text style={[styles.ratingText, { color: theme.colors.primary }]}>{rating}</Text>
           </View>
         </View>
-        <View style={styles.timeRow}>
+        
+        <View style={styles.bottomRow}>
           {formattedTime && (
-            <Text style={[styles.time, { color: theme.colors.primary }]}>{formattedTime}</Text>
+            <Text style={[styles.time, { color: isActive ? theme.colors.primary : theme.colors.text }]}>
+              {formattedTime}
+            </Text>
           )}
           {moveTime !== undefined && isActive && (
-            <Text style={[styles.moveTime, { color: theme.colors.textSecondary }]}> • {moveTime}s</Text>
+            <Text style={[styles.moveTime, { color: theme.colors.textSecondary }]}> • +{moveTime}s</Text>
+          )}
+          {capturedPieces && (
+            <Text style={[styles.captured, { color: theme.colors.textSecondary }]}> {capturedPieces}</Text>
           )}
         </View>
       </View>
@@ -63,56 +78,68 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    height: 50,
-    paddingHorizontal: 8,
-    backgroundColor: '#e88484ff',
-    borderRadius: 6,
-    marginVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginVertical: 3,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  opponent: {
-    justifyContent: 'flex-start',
+  activeContainer: {
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  player: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'flex-start',
-  },
-  details: {
+  infoSection: {
     flex: 1,
-    marginHorizontal: 8,
-    justifyContent: 'center',
+    marginLeft: 10,
+    gap: 3,
   },
-  nameRow: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    gap: 8,
   },
   name: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginRight: 6,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.1,
+    flex: 1,
   },
-  ratingTag: {
-    paddingHorizontal: 6,
+  ratingBadge: {
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   ratingText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  timeRow: {
+  bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   time: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '800',
     letterSpacing: 1,
+    fontVariant: ['tabular-nums'],
   },
   moveTime: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
+    opacity: 0.65,
+  },
+  captured: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginLeft: 'auto',
   },
 });
 
