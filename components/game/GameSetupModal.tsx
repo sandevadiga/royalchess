@@ -1,6 +1,6 @@
 import Slider from '@react-native-community/slider';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../common/styles/themes/useTheme';
 import { FONT, RADIUS, SPACING } from '../../constants';
 import { useAppSelector } from '../../services/hooks';
@@ -45,13 +45,15 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
     { value: 'timeless', label: 'Timeless', unit: '', icon: '∞' },
   ], []);
 
-  const getDifficultyLabel = useCallback((rating: number) => {
-    if (rating < 1000) return `Beginner • ${rating}`;
-    if (rating < 1400) return `Intermediate • ${rating}`;
-    if (rating < 1800) return `Advanced • ${rating}`;
-    if (rating < 2200) return `Expert • ${rating}`;
-    return `Master • ${rating}`;
+  const getDifficultyInfo = useCallback((rating: number) => {
+    if (rating < 1000) return { label: 'Beginner', emoji: '🌱', color: '#34C759' };
+    if (rating < 1400) return { label: 'Intermediate', emoji: '📚', color: '#5AC8FA' };
+    if (rating < 1800) return { label: 'Advanced', emoji: '⚡', color: '#FF9500' };
+    if (rating < 2200) return { label: 'Expert', emoji: '🔥', color: '#FF453A' };
+    return { label: 'Master', emoji: '👑', color: '#BF5AF2' };
   }, []);
+
+  const difficultyInfo = useMemo(() => getDifficultyInfo(difficulty), [difficulty, getDifficultyInfo]);
 
   const handleStart = useCallback(() => {
     onStartGame({ color: selectedColor, difficulty, timeControl });
@@ -63,51 +65,64 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
       onClose={onClose}
       contentStyle={{ backgroundColor: theme.colors.background }}
     >
-      <Text style={[styles.title, { color: theme.colors.text }]}>New Game</Text>
+      <Text style={[styles.title, { color: theme.colors.text }]}>⚔️ New Game</Text>
 
-      {/* Color Selection Card */}
-      <OptionSelector
-        options={colorOptions}
-        selected={selectedColor}
-        onSelect={(v) => setSelectedColor(v as any)}
-      />
-
-      {/* Time Control Card */}
-
-      <View style={styles.timeGrid}>
-        {timeOptions.map((option) => {
-          const active = timeControl === option.value;
-          return (
-            <View
-              key={option.value}
-              style={[
-                styles.timeButton,
-                { backgroundColor: active ? theme.colors.se + '15' : theme.colors.primary },
-                active && { borderColor: theme.colors.primary, borderWidth: 2 },
-              ]}
-              onTouchEnd={() => setTimeControl(option.value)}
-            >
-              {option.icon && <Text style={styles.timeIcon}>{option.icon}</Text>}
-              <Text style={[styles.timeValue, { color: active ? theme.colors.primary : theme.colors.text }]}>
-                {option.label}
-              </Text>
-              {option.unit && (
-                <Text style={[styles.timeUnit, { color: active ? theme.colors.primary : theme.colors.textSecondary }]}>
-                  {option.unit}
-                </Text>
-              )}
-            </View>
-          );
-        })}
+      {/* Color Selection */}
+      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Play as</Text>
+        <OptionSelector
+          options={colorOptions}
+          selected={selectedColor}
+          onSelect={(v) => setSelectedColor(v as any)}
+        />
       </View>
 
-      {/* Difficulty Card */}
-      <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+      {/* Time Control */}
+      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Time Control</Text>
+        <View style={styles.timeGrid}>
+          {timeOptions.map((option) => {
+            const active = timeControl === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                style={[
+                  styles.timeButton,
+                  { 
+                    backgroundColor: active ? theme.colors.primary + '15' : theme.colors.surfaceSecondary,
+                    borderColor: active ? theme.colors.primary : theme.colors.border,
+                  },
+                ]}
+                onPress={() => setTimeControl(option.value)}
+              >
+                <Text style={styles.timeIcon}>{option.icon}</Text>
+                <Text style={[styles.timeValue, { color: active ? theme.colors.primary : theme.colors.text }]}>
+                  {option.label}
+                </Text>
+                {option.unit && (
+                  <Text style={[styles.timeUnit, { color: active ? theme.colors.primary : theme.colors.textSecondary }]}>
+                    {option.unit}
+                  </Text>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
 
-
-        <Text style={[styles.difficultyText, { color: theme.colors.primary }]}>
-          {getDifficultyLabel(difficulty)}
-        </Text>
+      {/* Difficulty */}
+      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>Difficulty</Text>
+        
+        <View style={[styles.difficultyBadge, { backgroundColor: difficultyInfo.color + '15' }]}>
+          <Text style={styles.difficultyEmoji}>{difficultyInfo.emoji}</Text>
+          <Text style={[styles.difficultyLabel, { color: difficultyInfo.color }]}>
+            {difficultyInfo.label}
+          </Text>
+          <Text style={[styles.difficultyRating, { color: theme.colors.text }]}>
+            {difficulty}
+          </Text>
+        </View>
 
         <Slider
           style={styles.slider}
@@ -116,20 +131,20 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
           step={10}
           value={difficulty}
           onValueChange={(v) => setDifficulty(Math.round(v))}
-          minimumTrackTintColor={theme.colors.primary}
-          maximumTrackTintColor={theme.colors.border}
-          thumbTintColor={theme.colors.primary}
+          minimumTrackTintColor={difficultyInfo.color}
+          maximumTrackTintColor={theme.colors.borderLight}
+          thumbTintColor={difficultyInfo.color}
         />
 
         <View style={styles.range}>
-          <Text style={[styles.rangeText, { color: theme.colors.textSecondary }]}>800</Text>
-          <Text style={[styles.rangeText, { color: theme.colors.textSecondary }]}>2400</Text>
+          <Text style={[styles.rangeText, { color: theme.colors.textTertiary }]}>800</Text>
+          <Text style={[styles.rangeText, { color: theme.colors.textTertiary }]}>2400</Text>
         </View>
       </View>
 
       {/* Actions */}
       <Button
-        title="Play"
+        title="🎮 Start Game"
         onPress={handleStart}
         style={[styles.playButton, { backgroundColor: theme.colors.primary }]}
         textStyle={styles.playText}
@@ -147,86 +162,115 @@ function GameSetupModal({ visible, onClose, onStartGame }: GameSetupModalProps) 
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: FONT.XXL,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     textAlign: 'center',
-    marginBottom: SPACING.MD,
+    marginBottom: SPACING.LG,
+    letterSpacing: -0.5,
   },
 
-  card: {
+  section: {
     borderRadius: RADIUS.XL,
     padding: SPACING.LG,
-    marginBottom: SPACING.LG,
+    marginBottom: SPACING.MD,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
-  sectionTitle: {
-    fontSize: FONT.MD,
+  sectionLabel: {
+    fontSize: FONT.SM,
     fontWeight: '600',
-    marginBottom: SPACING.MD,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: SPACING.SM,
   },
 
   timeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.SM,
-    padding: 20,
   },
 
   timeButton: {
     width: '48%',
     paddingVertical: SPACING.LG,
-    borderRadius: RADIUS.MD,
+    borderRadius: RADIUS.LG,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'transparent',
-    backgroundColor: 'rgba(178, 178, 174, 0.27)'
   },
 
   timeIcon: {
-    fontSize: 18,
-    marginBottom: 2,
+    fontSize: 24,
+    marginBottom: 4,
   },
 
   timeValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
-    lineHeight: 26,
+    lineHeight: 28,
   },
 
   timeUnit: {
     fontSize: FONT.XS,
     fontWeight: '600',
-    marginTop: 1,
+    marginTop: 2,
   },
 
-  difficultyText: {
+  difficultyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.MD,
+    paddingHorizontal: SPACING.LG,
+    borderRadius: RADIUS.LG,
+    marginBottom: SPACING.MD,
+    gap: SPACING.SM,
+  },
+
+  difficultyEmoji: {
+    fontSize: 24,
+  },
+
+  difficultyLabel: {
     fontSize: FONT.LG,
     fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: SPACING.MD,
+  },
+
+  difficultyRating: {
+    fontSize: FONT.LG,
+    fontWeight: '800',
   },
 
   slider: {
     height: 40,
+    marginVertical: SPACING.XS,
   },
 
   range: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: SPACING.XS,
+    paddingHorizontal: SPACING.XS,
   },
 
   rangeText: {
-    fontSize: FONT.SM,
-    fontWeight: '500',
+    fontSize: FONT.XS,
+    fontWeight: '600',
   },
 
   playButton: {
-    marginTop: SPACING.SM,
-    marginBottom: SPACING.MD,
+    marginTop: SPACING.LG,
+    marginBottom: SPACING.SM,
     borderRadius: RADIUS.XL,
-    paddingVertical: SPACING.LG,
+    paddingVertical: SPACING.LG + 2,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   playText: {

@@ -6,7 +6,7 @@ A production-ready chess application built with React Native, Expo, and Redux To
 
 - ✅ **Chess Game** - Play against computer with 5 difficulty levels
 - ✅ **User Profile** - Track rating, statistics, and preferences
-- ✅ **Theme System** - Light/dark mode with customization
+- ✅ **Theme System** - 18 colors, light/dark mode, surface hierarchy ✨
 - ✅ **Component Library** - 11 reusable, optimized components
 - ✅ **Redux Store** - 9 services for scalable state management
 - ⚡ **Performance Optimized** - React.memo, useCallback, useMemo
@@ -39,6 +39,7 @@ royalchess/
 - [Component Architecture](./COMPONENT_ARCHITECTURE.md)
 - [Refactoring Summary](./REFACTORING_SUMMARY.md)
 - [Performance Optimization](./PERFORMANCE_OPTIMIZATION.md)
+- [Theme Enhancement](./THEME_ENHANCEMENT.md) ✨ NEW
 - [Quick Start Guide](./QUICK_START.md)
 - [Components README](./components/README.md)
 
@@ -80,10 +81,11 @@ You can start developing by editing the files inside the **app** directory. This
 - **Components:** 11 (all optimized)
 - **Redux Services:** 9
 - **Screens:** 5
+- **Theme Colors:** 18 per theme ✨
 - **Code Reduction:** 59% in screens
 - **Performance:** 9.5/10
 - **Type Coverage:** 100%
-- **Documentation:** 8 README files
+- **Documentation:** 9 README files
 
 ## 🎯 Component Library
 
@@ -212,6 +214,6 @@ All components support custom styling:
 
 **Performance Score: 9.5/10** ⚡
 
-**Last Updated:** After performance optimization
+**Last Updated:** After theme enhancement & UI improvements ✨
 
 **Documentation Rule:** ⚠️ Always update README when changing code
