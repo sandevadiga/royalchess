@@ -1,7 +1,7 @@
-import { View, TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
 import { memo } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { useTheme } from '../../common/styles/themes/useTheme';
-import { SPACING, RADIUS, FONT } from '../../constants';
+import { FONT, RADIUS, SPACING } from '../../constants';
 
 interface Option {
   value: string;
@@ -17,34 +17,34 @@ interface OptionSelectorProps {
 
 function OptionSelector({ options, selected, onSelect, style }: OptionSelectorProps) {
   const { theme } = useTheme();
-  
+
   return (
-    <View style={[styles.container, style]}>
-      {options.map((option) => (
-        <TouchableOpacity
-          key={option.value}
-          style={[
-            styles.option,
-            { 
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surface,
-            },
-            selected === option.value && { 
-              borderColor: theme.colors.primary,
-              backgroundColor: theme.colors.primary,
-            }
-          ]}
-          onPress={() => onSelect(option.value)}
-        >
-          <Text style={[
-            styles.text,
-            { color: theme.colors.textSecondary },
-            selected === option.value && { color: theme.colors.background }
-          ]}>
-            {option.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+    <View style={[styles.container, { backgroundColor: theme.colors.border }, style]}>
+      {options.map((option) => {
+        const isActive = selected === option.value;
+        return (
+          <TouchableOpacity
+            key={option.value}
+            onPress={() => onSelect(option.value)}
+            activeOpacity={0.85}
+            style={[
+              styles.option,
+              {
+                backgroundColor: isActive ? theme.colors.primary : 'transparent',
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.text,
+                { color: isActive ? '#fff' : theme.colors.textSecondary },
+              ]}
+            >
+              {option.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
@@ -52,14 +52,13 @@ function OptionSelector({ options, selected, onSelect, style }: OptionSelectorPr
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    borderRadius: RADIUS.XL,
+    padding: SPACING.XS,
   },
   option: {
     flex: 1,
-    padding: SPACING.MD,
-    marginHorizontal: SPACING.XS,
+    paddingVertical: SPACING.MD,
     borderRadius: RADIUS.LG,
-    borderWidth: 2,
     alignItems: 'center',
   },
   text: {

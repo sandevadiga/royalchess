@@ -3,7 +3,7 @@ const lightTheme = {
     primary: '#007AFF',
     secondary: '#5856D6',
     background: '#FFFFFF',
-    surface: '#F2F2F7',
+    surface: '#c0c0c4ff',
     text: '#000000',
     textSecondary: '#666666',
     border: '#E0E0E0',
@@ -79,4 +79,4 @@ export const themes = {
   dark: darkTheme,
 };
 
-export { lightTheme, darkTheme };
+export { darkTheme, lightTheme };

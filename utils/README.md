@@ -10,6 +10,7 @@ utils/
 ├── timerHandler.ts    → Timer countdown, increment logic
 ├── moveHandler.ts     → Move validation, execution, capture tracking
 ├── computerAI.ts      → Computer move generation
+├── chessHelpers.ts    → Chess utility functions (NEW)
 └── README.md
 ```
 
@@ -100,6 +101,33 @@ const label = getDifficultyLabel(1200); // 'Intermediate'
 - `1400-1799`: Advanced
 - `1800-2199`: Expert
 - `≥ 2200`: Master
+
+---
+
+### **chessHelpers.ts** ⭐ NEW
+Chess display and board utilities.
+
+```typescript
+// Convert piece to icon
+const icon = pieceToIcon('q'); // '♛'
+
+// Format captured pieces
+const captured = formatCapturedPieces(['p', 'p', 'n']);
+// '♟ x2 ♞'
+
+// Find king in check
+const kingSquare = findKingInCheck(chess); // 'e8'
+
+// Get board color scheme
+const colors = getBoardColorScheme('blue');
+// { white: '#dee3e6', black: '#8ca2ad' }
+```
+
+**Functions:**
+- `pieceToIcon(piece)` - Piece notation to Unicode icon
+- `formatCapturedPieces(pieces)` - Format with counts
+- `findKingInCheck(chess)` - Find checked king position
+- `getBoardColorScheme(scheme)` - Get board colors
 
 ---
 

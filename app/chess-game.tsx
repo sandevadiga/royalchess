@@ -1,13 +1,15 @@
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Chessboard from 'react-native-chessboard';
+import { useEffect, useMemo, useRef } from 'react';
+import { Alert, ScrollView, StyleSheet } from 'react-native';
 import AdBanner from '../components/common/AdBanner';
+import { ChessboardWithOverlays } from '../components/game/ChessboardWithOverlays';
+import { MoveChip } from '../components/game/MoveChip';
 import PlayerInfo from '../components/game/PlayerInfo';
 import { endGame } from '../services/game/gameSlice';
 import { useGameEngine } from '../services/game/useGameEngine';
 import { useAppDispatch, useAppSelector } from '../services/hooks';
 import { adjustComputerDifficulty, updateStatistics } from '../services/user/userSlice';
+import { findKingInCheck, formatCapturedPieces, getBoardColorScheme } from '../utils/chessHelpers';
 import { getDifficultyLabel } from '../utils/computerAI';
 import { TimeControlType } from '../utils/gameRules';
 
@@ -48,27 +50,11 @@ export default function ChessGameScreen() {
     difficulty: validDifficulty,
     timeControl: timeControl as TimeControlType
   }), [validatedColor, validDifficulty, timeControl]);
-  
-  const { fen, chess, gameEnded, capturedPieces, onPlayerMove, lastMove } = useGameEngine(gameEngineProps);
-  const [boardSize, setBoardSize] = useState(0);
 
-  // Find king position if in check
-  const kingInCheck = useMemo(() => {
-    if (!chess.inCheck()) return null;
-    const board = chess.board();
-    const turn = chess.turn();
-    for (let rank = 0; rank < 8; rank++) {
-      for (let file = 0; file < 8; file++) {
-        const piece = board[rank][file];
-        if (piece && piece.type === 'k' && piece.color === turn) {
-          const fileChar = String.fromCharCode(97 + file);
-          const rankChar = String(8 - rank);
-          return fileChar + rankChar;
-        }
-      }
-    }
-    return null;
-  }, [fen]);
+  const { fen, chess, gameEnded, capturedPieces, onPlayerMove, lastMove } = useGameEngine(gameEngineProps);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const kingInCheck = useMemo(() => findKingInCheck(chess), [fen]);
 
   // Handle game end
   useEffect(() => {
@@ -146,39 +132,26 @@ export default function ChessGameScreen() {
 
   const lastMoves = useMemo(() => {
     const moves = game.current.moves;
-    return moves.slice(-10).map((move, idx) => ({
-      number: moves.length - 9 + idx,
-      san: move.san
-    }));
+    return moves.slice(-10).map((move, idx) => {
+      const moveIndex = moves.length - 10 + idx;
+      return {
+        number: Math.floor(moveIndex / 2) + 1,
+        san: move.san,
+        color: (moveIndex % 2 === 0 ? 'w' : 'b') as 'w' | 'b'
+      };
+    });
   }, [game.current.moves]);
 
-  const pieceToIcon = (piece: string) => {
-    const icons: { [key: string]: string } = {
-      'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚'
-    };
-    return icons[piece.toLowerCase()] || piece;
-  };
+  useEffect(() => {
+    if (scrollViewRef.current && game.current.moves.length > 0) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  }, [game.current.moves.length]);
 
-  const formatCapturedPieces = (pieces: string[]) => {
-    if (pieces.length === 0) return '-';
-    const counts: { [key: string]: number } = {};
-    pieces.forEach(p => counts[p] = (counts[p] || 0) + 1);
-    return Object.entries(counts)
-      .map(([piece, count]) => `${pieceToIcon(piece)}${count > 1 ? ` x${count}` : ''}`)
-      .join(' ');
-  };
-
-  const boardColors = useMemo(() => {
-    const schemes = {
-      classic: { white: '#f0d9b5', black: '#b58863' },
-      blue: { white: '#dee3e6', black: '#8ca2ad' },
-      green: { white: '#ffffdd', black: '#86a666' },
-      purple: { white: '#e8d5f0', black: '#9f7ab8' },
-      wood: { white: '#f4e4c1', black: '#a67c52' },
-    };
-    const scheme = user.preferences.boardColorScheme as keyof typeof schemes;
-    return schemes[scheme] || schemes.classic;
-  }, [user.preferences.boardColorScheme]);
+  const boardColors = useMemo(() =>
+    getBoardColorScheme(user.preferences.boardColorScheme),
+    [user.preferences.boardColorScheme]
+  );
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
@@ -194,53 +167,14 @@ export default function ChessGameScreen() {
       />
 
 
-      <View onLayout={(e) => setBoardSize(e.nativeEvent.layout.width)}>
-        <Chessboard
-          key={fen}
-          fen={fen}
-          onMove={(move) => onPlayerMove(move.move)}
-          gestureEnabled={chess.turn() === validatedColor.charAt(0)}
-          colors={boardColors}
-          durations={{ move: 200 }}
-        />
-        {boardSize > 0 && (
-          <View style={styles.highlightContainer} pointerEvents="none">
-            {lastMove && ['from', 'to'].map((type) => {
-              const square = lastMove[type as 'from' | 'to'];
-              const file = square.charCodeAt(0) - 97;
-              const rank = 8 - parseInt(square[1]);
-              const squareSize = boardSize / 8;
-              return (
-                <View
-                  key={type}
-                  style={[
-                    styles.highlight,
-                    {
-                      left: file * squareSize,
-                      top: rank * squareSize,
-                      width: squareSize,
-                      height: squareSize,
-                    }
-                  ]}
-                />
-              );
-            })}
-            {kingInCheck && (
-              <View
-                style={[
-                  styles.checkHighlight,
-                  {
-                    left: (kingInCheck.charCodeAt(0) - 97) * (boardSize / 8),
-                    top: (8 - parseInt(kingInCheck[1])) * (boardSize / 8),
-                    width: boardSize / 8,
-                    height: boardSize / 8,
-                  }
-                ]}
-              />
-            )}
-          </View>
-        )}
-      </View>
+      <ChessboardWithOverlays
+        fen={fen}
+        onMove={onPlayerMove}
+        gestureEnabled={chess.turn() === validatedColor.charAt(0)}
+        colors={boardColors}
+        lastMove={lastMove}
+        kingInCheck={kingInCheck}
+      />
 
 
       <PlayerInfo
@@ -254,11 +188,19 @@ export default function ChessGameScreen() {
       <AdBanner />
 
       {game.current.moves.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.movesScroll}>
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.movesScroll}
+        >
           {lastMoves.map((move, idx) => (
-            <View key={idx} style={styles.moveChip}>
-              <Text style={styles.moveText}>{move.number}.{move.san}</Text>
-            </View>
+            <MoveChip
+              key={idx}
+              moveNumber={move.number}
+              san={move.san}
+              color={move.color}
+            />
           ))}
         </ScrollView>
       )}
@@ -287,32 +229,5 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 6,
     maxHeight: 30,
-  },
-  moveChip: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 6,
-  },
-  moveText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#555',
-  },
-  highlightContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  highlight: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 0, 0.4)',
-  },
-  checkHighlight: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255, 0, 0, 0.5)',
   },
 });

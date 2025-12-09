@@ -6,6 +6,8 @@
 |------|---------|-------|--------|----------|
 | `GameSetupModal.tsx` | Game setup modal (color, difficulty, time) | 160 | ✅ Active | ⚡ memo + useCallback + useMemo |
 | `PlayerInfo.tsx` | Player/Computer info display | 90 | ✅ Active | ⚡ memo + useMemo |
+| `MoveChip.tsx` | Chess move display chip | 40 | ✅ Active | ⚡ memo |
+| `ChessboardWithOverlays.tsx` | Chessboard with highlights | 85 | ✅ Active | ⚡ memo |
 
 ---
 
@@ -89,6 +91,11 @@ GameSetupModal ──┬──> Modal
 
 PlayerInfo ──────┬──> Avatar
                  └──> Text/View
+
+MoveChip ────────┬──> View/Text
+
+ChessboardWithOverlays ──┬──> Chessboard
+                         └──> View (overlays)
 ```
 
 ---
@@ -147,12 +154,53 @@ import PlayerInfo from '../../components/game/PlayerInfo';
 
 ---
 
+### **MoveChip.tsx**
+**Purpose:** Display individual chess move
+
+**Props:**
+```typescript
+{
+  moveNumber: number;
+  san: string;
+  color: 'w' | 'b';
+  style?: ViewStyle;
+  textStyle?: TextStyle;
+}
+```
+
+**Used In:**
+- ✅ `app/chess-game.tsx` - Move history display
+
+**Performance:** ⚡ Memoized
+
+---
+
+### **ChessboardWithOverlays.tsx**
+**Purpose:** Chessboard with move highlights and check indicator
+
+**Props:**
+```typescript
+{
+  fen: string;
+  onMove: (move: string) => void;
+  gestureEnabled: boolean;
+  colors: { white: string; black: string };
+  lastMove?: { from: string; to: string } | null;
+  kingInCheck?: string | null;
+}
+```
+
+**Used In:**
+- ✅ `app/chess-game.tsx` - Main game board
+
+**Performance:** ⚡ Memoized with overlay calculations
+
+---
+
 ## 🚀 Future Components (Planned)
 
 - [ ] `GameTimer.tsx` - Countdown timer component
-- [ ] `MoveHistory.tsx` - Move list display
 - [ ] `GameControls.tsx` - Resign, Draw, Pause buttons
-- [ ] `CapturedPieces.tsx` - Captured pieces display
 - [ ] `GameResult.tsx` - Win/Loss/Draw modal
 
 ---

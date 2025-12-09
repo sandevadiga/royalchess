@@ -1,18 +1,18 @@
-import { Modal as RNModal, View, StyleSheet, ViewStyle } from 'react-native';
 import { ReactNode, memo } from 'react';
+import { Modal as RNModal, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '../../common/styles/themes/useTheme';
-import { LAYOUT, SPACING, RADIUS, SHADOW } from '../../constants';
+import { RADIUS, SHADOW, SPACING } from '../../constants';
 
 interface ModalProps {
   visible: boolean;
   onClose: () => void;
   children: ReactNode;
-  contentStyle?: ViewStyle;
+  contentStyle?: StyleProp<ViewStyle>;
 }
 
 function Modal({ visible, onClose, children, contentStyle }: ModalProps) {
   const { theme } = useTheme();
-  
+
   return (
     <RNModal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -32,9 +32,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   content: {
-    padding: SPACING.XXL,
-    borderRadius: RADIUS.XXXL,
-    width: LAYOUT.MODAL_WIDTH,
+    padding: SPACING.SM,
+    borderRadius: RADIUS.XL,
+    width: '95%' as const,
     ...SHADOW.MEDIUM,
   },
 });

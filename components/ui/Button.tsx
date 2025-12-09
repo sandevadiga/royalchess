@@ -1,7 +1,7 @@
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { memo } from 'react';
+import { StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
 import { useTheme } from '../../common/styles/themes/useTheme';
-import { SPACING, RADIUS, FONT } from '../../constants';
+import { FONT, RADIUS, SPACING } from '../../constants';
 
 interface ButtonProps {
   onPress: () => void;
@@ -12,42 +12,54 @@ interface ButtonProps {
   disabled?: boolean;
 }
 
-function Button({ 
-  onPress, 
-  title, 
-  variant = 'primary', 
-  style, 
+function Button({
+  onPress,
+  title,
+  variant = 'primary',
+  style,
   textStyle,
-  disabled = false 
+  disabled = false,
 }: ButtonProps) {
   const { theme } = useTheme();
-  
-  const variantStyles = {
-    primary: { backgroundColor: theme.colors.primary },
-    secondary: { backgroundColor: theme.colors.secondary },
-    outline: { backgroundColor: 'transparent', borderWidth: 2, borderColor: theme.colors.primary },
-    cancel: { backgroundColor: 'transparent' },
-  };
 
-  const textStyles = {
-    primary: { color: theme.colors.background },
-    secondary: { color: theme.colors.background },
-    outline: { color: theme.colors.primary },
-    cancel: { color: theme.colors.textSecondary },
-  };
+  const backgroundColor = {
+    primary: theme.colors.primary,
+    secondary: theme.colors.secondary,
+    outline: 'transparent',
+    cancel: 'transparent',
+  }[variant];
+
+  const borderColor = {
+    primary: 'transparent',
+    secondary: 'transparent',
+    outline: theme.colors.primary,
+    cancel: 'transparent',
+  }[variant];
+
+  const textColor = {
+    primary: theme.colors.background,
+    secondary: theme.colors.background,
+    outline: theme.colors.primary,
+    cancel: theme.colors.textSecondary,
+  }[variant];
 
   return (
     <TouchableOpacity
       style={[
         styles.base,
-        variantStyles[variant],
+        {
+          backgroundColor,
+          borderColor,
+          borderWidth: variant === 'outline' ? 2 : 0,
+        },
         disabled && styles.disabled,
-        style
+        style,
       ]}
       onPress={onPress}
       disabled={disabled}
+      activeOpacity={0.85}
     >
-      <Text style={[styles.text, textStyles[variant], textStyle]}>
+      <Text style={[styles.text, { color: textColor }, textStyle]}>
         {title}
       </Text>
     </TouchableOpacity>
@@ -56,9 +68,9 @@ function Button({
 
 const styles = StyleSheet.create({
   base: {
-    paddingHorizontal: SPACING.XXL,
     paddingVertical: SPACING.LG,
-    borderRadius: RADIUS.MD,
+    paddingHorizontal: SPACING.XL,
+    borderRadius: RADIUS.LG,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -67,7 +79,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: FONT.BASE,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });
 
