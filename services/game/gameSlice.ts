@@ -221,6 +221,18 @@ const gameSlice = createSlice({
         console.error('Failed to update timer:', error);
       }
     },
+    undoToMove: (state, action: PayloadAction<number>) => {
+      try {
+        const moveIndex = action.payload;
+        if (moveIndex >= 0 && moveIndex < state.current.moves.length) {
+          state.current.moves = state.current.moves.slice(0, moveIndex + 1);
+          // Update turn based on number of moves
+          state.current.turn = (moveIndex + 1) % 2 === 0 ? 'white' : 'black';
+        }
+      } catch (error) {
+        console.error('Failed to undo to move:', error);
+      }
+    },
   },
 });
 
@@ -232,6 +244,7 @@ export const {
   updateSettings,
   updateAnalysis,
   updateTimer,
+  undoToMove,
 } = gameSlice.actions;
 
 export default gameSlice.reducer;

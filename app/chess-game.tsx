@@ -1,11 +1,12 @@
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useEffect, useMemo, useRef } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { useEffect, useMemo, useRef, useCallback } from 'react';
+import { Alert, ScrollView, StyleSheet, View, Pressable, Text } from 'react-native';
+import { Chess } from 'chess.js';
 import AdBanner from '../components/common/AdBanner';
 import { ChessboardWithOverlays } from '../components/game/ChessboardWithOverlays';
 import { MoveChip } from '../components/game/MoveChip';
 import PlayerInfo from '../components/game/PlayerInfo';
-import { endGame } from '../services/game/gameSlice';
+import { endGame, undoToMove } from '../services/game/gameSlice';
 import { useGameEngine } from '../services/game/useGameEngine';
 import { useAppDispatch, useAppSelector } from '../services/hooks';
 import { adjustComputerDifficulty, updateStatistics } from '../services/user/userSlice';
@@ -18,6 +19,13 @@ export default function ChessGameScreen() {
   const color = params.color || 'white';
   const difficulty = params.difficulty;
   const timeControl = params.timeControl || 'blitz';
+  const undoEnabled = params.undoEnabled === 'true';
+  
+  console.log('🔧 Chess Game Debug:', {
+    undoEnabled,
+    undoParam: params.undoEnabled,
+    allParams: params
+  });
 
   // Validate parameters
   const validColor = (Array.isArray(color) ? color[0] : color) as string;
@@ -118,15 +126,45 @@ export default function ChessGameScreen() {
 
   const lastMoves = useMemo(() => {
     const moves = game.current.moves;
+    const startIndex = Math.max(0, moves.length - 10);
     return moves.slice(-10).map((move, idx) => {
-      const moveIndex = moves.length - 10 + idx;
+      const actualMoveIndex = startIndex + idx;
       return {
-        number: Math.floor(moveIndex / 2) + 1,
+        number: Math.floor(actualMoveIndex / 2) + 1,
         san: move.san,
-        color: (moveIndex % 2 === 0 ? 'w' : 'b') as 'w' | 'b'
+        color: (actualMoveIndex % 2 === 0 ? 'w' : 'b') as 'w' | 'b',
+        moveIndex: actualMoveIndex
       };
     });
   }, [game.current.moves]);
+
+  const handleUndoToMove = useCallback((moveIndex: number) => {
+    console.log('🔄 Undo Move Clicked:', {
+      moveIndex,
+      undoEnabled,
+      gameEnded,
+      canUndo: undoEnabled && !gameEnded
+    });
+    
+    if (undoEnabled && !gameEnded) {
+      console.log('✅ Dispatching undo action');
+      dispatch(undoToMove(moveIndex));
+    } else {
+      console.log('❌ Undo blocked:', { undoEnabled, gameEnded });
+    }
+  }, [undoEnabled, gameEnded, dispatch]);
+
+  const handleUndoOne = useCallback(() => {
+    const currentMoves = game.current.moves.length;
+    if (currentMoves > 0 && undoEnabled && !gameEnded) {
+      dispatch(undoToMove(currentMoves - 2)); // Undo one move (player + computer)
+    }
+  }, [game.current.moves.length, undoEnabled, gameEnded, dispatch]);
+
+  const handleRedoOne = useCallback(() => {
+    // For now, just a placeholder - full redo would need move history
+    console.log('Redo not implemented yet');
+  }, []);
 
   useEffect(() => {
     if (scrollViewRef.current && game.current.moves.length > 0) {
@@ -174,21 +212,56 @@ export default function ChessGameScreen() {
       <AdBanner />
 
       {game.current.moves.length > 0 && (
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.movesScroll}
-        >
-          {lastMoves.map((move, idx) => (
-            <MoveChip
-              key={idx}
-              moveNumber={move.number}
-              san={move.san}
-              color={move.color}
-            />
-          ))}
-        </ScrollView>
+        <View style={styles.movesContainer}>
+          {undoEnabled && (
+            <Pressable 
+              style={[styles.arrowButtonFixed, { opacity: game.current.moves.length > 0 ? 1 : 0.3 }]}
+              onPress={handleUndoOne}
+              disabled={game.current.moves.length === 0 || gameEnded}
+            >
+              <Text style={styles.arrowText}>←</Text>
+            </Pressable>
+          )}
+          
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.movesScroll}
+            contentContainerStyle={styles.movesContent}
+          >
+            {lastMoves.map((move, idx) => {
+              console.log('🎯 Rendering MoveChip:', {
+                idx,
+                moveIndex: move.moveIndex,
+                undoEnabled,
+                san: move.san
+              });
+              
+              return (
+                <MoveChip
+                  key={idx}
+                  moveNumber={move.number}
+                  san={move.san}
+                  color={move.color}
+                  moveIndex={move.moveIndex}
+                  undoEnabled={undoEnabled}
+                  onPress={handleUndoToMove}
+                />
+              );
+            })}
+          </ScrollView>
+          
+          {undoEnabled && (
+            <Pressable 
+              style={[styles.arrowButtonFixed, { opacity: 0.3 }]}
+              onPress={handleRedoOne}
+              disabled={true}
+            >
+              <Text style={styles.arrowText}>→</Text>
+            </Pressable>
+          )}
+        </View>
       )}
     </ScrollView>
   );
@@ -211,9 +284,50 @@ const styles = StyleSheet.create({
   },
 
 
-  movesScroll: {
+  movesContainer: {
     width: '100%',
     marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  movesScroll: {
+    flex: 1,
     maxHeight: 30,
+  },
+
+  movesContent: {
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+
+  arrowButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginHorizontal: 4,
+  },
+
+  arrowButtonFixed: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginHorizontal: 8,
+  },
+
+  arrowText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
   },
 });

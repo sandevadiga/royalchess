@@ -20,7 +20,7 @@ export default function HomeScreen() {
     const finalColor = config.color === 'random' 
       ? (Math.random() > 0.5 ? 'white' : 'black') 
       : config.color;
-    router.push(`/chess-game?color=${finalColor}&difficulty=${config.difficulty}&timeControl=${config.timeControl}`);
+    router.push(`/chess-game?color=${finalColor}&difficulty=${config.difficulty}&timeControl=${config.timeControl}&undoEnabled=${config.undoEnabled}`);
   }, []);
 
   return (
