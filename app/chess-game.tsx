@@ -6,7 +6,7 @@ import AdBanner from '../components/common/AdBanner';
 import { ChessboardWithOverlays } from '../components/game/ChessboardWithOverlays';
 import { MoveChip } from '../components/game/MoveChip';
 import PlayerInfo from '../components/game/PlayerInfo';
-import { endGame, undoToMove } from '../services/game/gameSlice';
+import { endGame, navigateToMove, navigatePrevious, navigateNext, navigateToLive, updateNavigationPermissions, migrateGameState, undoToMove } from '../services/game/gameSlice';
 import { useGameEngine } from '../services/game/useGameEngine';
 import { useAppDispatch, useAppSelector } from '../services/hooks';
 import { adjustComputerDifficulty, updateStatistics } from '../services/user/userSlice';
@@ -21,11 +21,7 @@ export default function ChessGameScreen() {
   const timeControl = params.timeControl || 'blitz';
   const undoEnabled = params.undoEnabled === 'true';
   
-  console.log('🔧 Chess Game Debug:', {
-    undoEnabled,
-    undoParam: params.undoEnabled,
-    allParams: params
-  });
+
 
   // Validate parameters
   const validColor = (Array.isArray(color) ? color[0] : color) as string;
@@ -105,7 +101,7 @@ export default function ChessGameScreen() {
     const unsubscribe = navigation.addListener('blur', () => {
       if (!gameEnded) {
         // Auto-save current game state without ending the game
-        console.log('Game paused - state saved');
+
       }
     });
     
@@ -138,33 +134,72 @@ export default function ChessGameScreen() {
     });
   }, [game.current.moves]);
 
-  const handleUndoToMove = useCallback((moveIndex: number) => {
-    console.log('🔄 Undo Move Clicked:', {
-      moveIndex,
-      undoEnabled,
-      gameEnded,
-      canUndo: undoEnabled && !gameEnded
-    });
-    
-    if (undoEnabled && !gameEnded) {
-      console.log('✅ Dispatching undo action');
-      dispatch(undoToMove(moveIndex));
-    } else {
-      console.log('❌ Undo blocked:', { undoEnabled, gameEnded });
-    }
-  }, [undoEnabled, gameEnded, dispatch]);
+  // Navigation permissions
+  const canNavigate = useMemo(() => {
+    const { opponentType, status } = game.current;
+    if (opponentType === 'computer') return undoEnabled;
+    if (opponentType === 'human') return status !== 'playing';
+    return false;
+  }, [game.current.opponentType, game.current.status, undoEnabled]);
 
-  const handleUndoOne = useCallback(() => {
-    const currentMoves = game.current.moves.length;
-    if (currentMoves > 0 && undoEnabled && !gameEnded) {
-      dispatch(undoToMove(currentMoves - 2)); // Undo one move (player + computer)
-    }
-  }, [game.current.moves.length, undoEnabled, gameEnded, dispatch]);
+  const isLivePosition = game.navigation?.isLivePosition ?? true;
+  const currentNavIndex = game.navigation?.currentMoveIndex ?? -1;
+  const maxMoveIndex = game.current.moves.length - 1;
 
-  const handleRedoOne = useCallback(() => {
-    // For now, just a placeholder - full redo would need move history
-    console.log('Redo not implemented yet');
-  }, []);
+  // Navigation handlers
+  const handleNavigateToMove = useCallback((moveIndex: number) => {
+    if (canNavigate) {
+
+      
+      // For computer games during play, use undoToMove to actually change game state
+      if (game.current.opponentType === 'computer' && game.current.status === 'playing') {
+        dispatch(undoToMove(moveIndex));
+      } else {
+        dispatch(navigateToMove(moveIndex));
+      }
+    }
+  }, [canNavigate, dispatch, game.current.opponentType, game.current.status]);
+
+  const handleNavigatePrevious = useCallback(() => {
+    if (canNavigate) {
+      // For computer games during play, use undoToMove for actual undo
+      if (game.current.opponentType === 'computer' && game.current.status === 'playing') {
+        const targetIndex = Math.max(-1, currentNavIndex - 1);
+        dispatch(undoToMove(targetIndex));
+      } else {
+        dispatch(navigatePrevious());
+      }
+    }
+  }, [canNavigate, dispatch, game.current.opponentType, game.current.status, currentNavIndex]);
+
+  const handleNavigateNext = useCallback(() => {
+    if (canNavigate) {
+      // For computer games during play, use undoToMove for actual undo
+      if (game.current.opponentType === 'computer' && game.current.status === 'playing') {
+        const targetIndex = Math.min(maxMoveIndex, currentNavIndex + 1);
+        dispatch(undoToMove(targetIndex));
+      } else {
+        dispatch(navigateNext());
+      }
+    }
+  }, [canNavigate, dispatch, game.current.opponentType, game.current.status, currentNavIndex, maxMoveIndex]);
+
+  const handleNavigateToLive = useCallback(() => {
+    if (canNavigate) {
+      // For computer games during play, use undoToMove to go to live position
+      if (game.current.opponentType === 'computer' && game.current.status === 'playing') {
+        dispatch(undoToMove(maxMoveIndex));
+      } else {
+        dispatch(navigateToLive());
+      }
+    }
+  }, [canNavigate, dispatch, game.current.opponentType, game.current.status, maxMoveIndex]);
+
+  // Ensure navigation state exists and update permissions
+  useEffect(() => {
+    dispatch(migrateGameState());
+    dispatch(updateNavigationPermissions());
+  }, [game.current.opponentType, game.current.status, dispatch]);
 
   useEffect(() => {
     if (scrollViewRef.current && game.current.moves.length > 0) {
@@ -213,11 +248,14 @@ export default function ChessGameScreen() {
 
       {game.current.moves.length > 0 && (
         <View style={styles.movesContainer}>
-          {undoEnabled && (
+          {canNavigate && (
             <Pressable 
-              style={[styles.arrowButtonFixed, { opacity: game.current.moves.length > 0 ? 1 : 0.3 }]}
-              onPress={handleUndoOne}
-              disabled={game.current.moves.length === 0 || gameEnded}
+              style={[styles.arrowButtonFixed, { 
+                opacity: currentNavIndex > -1 ? 1 : 0.3,
+                backgroundColor: currentNavIndex > -1 ? '#e3f2fd' : '#f0f0f0'
+              }]}
+              onPress={handleNavigatePrevious}
+              disabled={currentNavIndex <= -1}
             >
               <Text style={styles.arrowText}>←</Text>
             </Pressable>
@@ -231,12 +269,7 @@ export default function ChessGameScreen() {
             contentContainerStyle={styles.movesContent}
           >
             {lastMoves.map((move, idx) => {
-              console.log('🎯 Rendering MoveChip:', {
-                idx,
-                moveIndex: move.moveIndex,
-                undoEnabled,
-                san: move.san
-              });
+              const isCurrentMove = move.moveIndex === currentNavIndex;
               
               return (
                 <MoveChip
@@ -245,20 +278,34 @@ export default function ChessGameScreen() {
                   san={move.san}
                   color={move.color}
                   moveIndex={move.moveIndex}
-                  undoEnabled={undoEnabled}
-                  onPress={handleUndoToMove}
+                  undoEnabled={canNavigate}
+                  onPress={handleNavigateToMove}
+                  style={isCurrentMove ? { backgroundColor: '#2196f3', borderColor: '#1976d2' } : undefined}
+                  textStyle={isCurrentMove ? { color: '#fff' } : undefined}
                 />
               );
             })}
           </ScrollView>
           
-          {undoEnabled && (
+          {canNavigate && (
             <Pressable 
-              style={[styles.arrowButtonFixed, { opacity: 0.3 }]}
-              onPress={handleRedoOne}
-              disabled={true}
+              style={[styles.arrowButtonFixed, { 
+                opacity: currentNavIndex < maxMoveIndex ? 1 : 0.3,
+                backgroundColor: currentNavIndex < maxMoveIndex ? '#e3f2fd' : '#f0f0f0'
+              }]}
+              onPress={handleNavigateNext}
+              disabled={currentNavIndex >= maxMoveIndex}
             >
               <Text style={styles.arrowText}>→</Text>
+            </Pressable>
+          )}
+          
+          {canNavigate && !isLivePosition && (
+            <Pressable 
+              style={[styles.arrowButtonFixed, { backgroundColor: '#4caf50', marginLeft: 12 }]}
+              onPress={handleNavigateToLive}
+            >
+              <Text style={[styles.arrowText, { color: '#fff' }]}>Live</Text>
             </Pressable>
           )}
         </View>

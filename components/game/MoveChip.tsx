@@ -22,24 +22,14 @@ export const MoveChip = React.memo<MoveChipProps>(({
   style,
   textStyle 
 }) => {
-  console.log('🔧 MoveChip Props:', {
-    moveNumber,
-    san,
-    moveIndex,
-    undoEnabled,
-    hasOnPress: !!onPress
-  });
+
   
   const backgroundColor = color === 'w' ? '#e8f4f8' : '#2c2c2c';
   const textColor = color === 'w' ? '#333' : '#fff';
 
   const handlePress = () => {
-    console.log('👆 MoveChip Pressed:', { moveIndex, undoEnabled, hasOnPress: !!onPress });
     if (undoEnabled && onPress) {
-      console.log('✅ Calling onPress with moveIndex:', moveIndex);
       onPress(moveIndex);
-    } else {
-      console.log('❌ Press blocked:', { undoEnabled, hasOnPress: !!onPress });
     }
   };
 

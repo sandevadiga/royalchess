@@ -39,6 +39,11 @@ interface GameState {
       blackTime: number;
     };
   };
+  navigation: {
+    currentMoveIndex: number; // -1 = starting position, 0+ = move index
+    isLivePosition: boolean;  // true if viewing actual game position
+    canNavigate: boolean;     // computed based on game type and settings
+  };
   history: GameRecord[];
   settings: {
     showLegalMoves: boolean;
@@ -71,6 +76,11 @@ const initialState: GameState = {
       blackTime: 600,
     },
   },
+  navigation: {
+    currentMoveIndex: -1, // Start at beginning
+    isLivePosition: true,
+    canNavigate: true,
+  },
   history: [],
   settings: {
     showLegalMoves: true,
@@ -89,6 +99,16 @@ const gameSlice = createSlice({
   name: 'game',
   initialState,
   reducers: {
+    // Migration action to ensure navigation state exists
+    migrateGameState: (state) => {
+      if (!state.navigation) {
+        state.navigation = {
+          currentMoveIndex: -1,
+          isLivePosition: true,
+          canNavigate: true,
+        };
+      }
+    },
     startNewGame: (state, action: PayloadAction<{ 
       playerColor: 'white' | 'black'; 
       difficulty: number; // ELO rating 800-2400
@@ -120,6 +140,13 @@ const gameSlice = createSlice({
           blackTime: timeSettings.initial,
         },
       };
+      
+      // Reset navigation to starting position
+      state.navigation = {
+        currentMoveIndex: -1,
+        isLivePosition: true,
+        canNavigate: true,
+      };
     },
     makeMove: (state, action: PayloadAction<Move>) => {
       try {
@@ -130,6 +157,12 @@ const gameSlice = createSlice({
         
         state.current.moves.push(action.payload);
         state.current.turn = state.current.turn === 'white' ? 'black' : 'white';
+        
+        // Update navigation to stay at live position
+        if (state.navigation) {
+          state.navigation.currentMoveIndex = state.current.moves.length - 1;
+          state.navigation.isLivePosition = true;
+        }
       } catch (error) {
         console.error('Failed to make move:', error);
         // Ensure moves array exists even if push fails
@@ -221,13 +254,106 @@ const gameSlice = createSlice({
         console.error('Failed to update timer:', error);
       }
     },
+    // Navigation Actions
+    navigateToMove: (state, action: PayloadAction<number>) => {
+      try {
+        const targetIndex = action.payload;
+        const maxIndex = state.current.moves.length - 1;
+        
+        // Clamp to valid range (-1 to maxIndex)
+        const clampedIndex = Math.max(-1, Math.min(maxIndex, targetIndex));
+        
+        state.navigation.currentMoveIndex = clampedIndex;
+        state.navigation.isLivePosition = clampedIndex === maxIndex;
+      } catch (error) {
+        console.error('Failed to navigate to move:', error);
+      }
+    },
+    
+    navigatePrevious: (state) => {
+      try {
+        const newIndex = Math.max(-1, state.navigation.currentMoveIndex - 1);
+        state.navigation.currentMoveIndex = newIndex;
+        state.navigation.isLivePosition = newIndex === state.current.moves.length - 1;
+      } catch (error) {
+        console.error('Failed to navigate previous:', error);
+      }
+    },
+    
+    navigateNext: (state) => {
+      try {
+        const maxIndex = state.current.moves.length - 1;
+        const newIndex = Math.min(maxIndex, state.navigation.currentMoveIndex + 1);
+        state.navigation.currentMoveIndex = newIndex;
+        state.navigation.isLivePosition = newIndex === maxIndex;
+      } catch (error) {
+        console.error('Failed to navigate next:', error);
+      }
+    },
+    
+    navigateToLive: (state) => {
+      try {
+        const liveIndex = state.current.moves.length - 1;
+        state.navigation.currentMoveIndex = liveIndex;
+        state.navigation.isLivePosition = true;
+      } catch (error) {
+        console.error('Failed to navigate to live:', error);
+      }
+    },
+    
+    updateNavigationPermissions: (state) => {
+      try {
+        const { opponentType, status } = state.current;
+        
+        // Computer games: Always allow navigation
+        if (opponentType === 'computer') {
+          state.navigation.canNavigate = true;
+          return;
+        }
+        
+        // Human games: Only allow if game ended
+        if (opponentType === 'human') {
+          state.navigation.canNavigate = status !== 'playing';
+          return;
+        }
+        
+        state.navigation.canNavigate = false;
+      } catch (error) {
+        console.error('Failed to update navigation permissions:', error);
+      }
+    },
+    
+    // Undo to specific move (computer games only)
     undoToMove: (state, action: PayloadAction<number>) => {
       try {
         const moveIndex = action.payload;
-        if (moveIndex >= 0 && moveIndex < state.current.moves.length) {
-          state.current.moves = state.current.moves.slice(0, moveIndex + 1);
-          // Update turn based on number of moves
-          state.current.turn = (moveIndex + 1) % 2 === 0 ? 'white' : 'black';
+        
+        // Only allow actual undo in computer games during play
+        if (state.current.opponentType === 'computer' && state.current.status === 'playing') {
+          if (moveIndex >= -1 && moveIndex < state.current.moves.length) {
+            // Truncate moves array to the target position
+            const newMoves = moveIndex === -1 ? [] : state.current.moves.slice(0, moveIndex + 1);
+            state.current.moves = newMoves;
+            
+            // Update turn based on remaining moves (white starts, so even number of moves = white's turn)
+            state.current.turn = newMoves.length % 2 === 0 ? 'white' : 'black';
+            
+            // Update navigation to live position
+            state.navigation.currentMoveIndex = moveIndex;
+            state.navigation.isLivePosition = true;
+            
+            console.log('🔄 Undo complete:', { 
+              moveIndex, 
+              remainingMoves: newMoves.length, 
+              turn: state.current.turn,
+              isLive: true
+            });
+          }
+        } else {
+          // For other cases, just navigate
+          const clampedIndex = Math.max(-1, Math.min(state.current.moves.length - 1, moveIndex));
+          state.navigation.currentMoveIndex = clampedIndex;
+          state.navigation.isLivePosition = clampedIndex === state.current.moves.length - 1;
         }
       } catch (error) {
         console.error('Failed to undo to move:', error);
@@ -237,6 +363,7 @@ const gameSlice = createSlice({
 });
 
 export const {
+  migrateGameState,
   startNewGame,
   makeMove,
   updateGameState,
@@ -244,6 +371,11 @@ export const {
   updateSettings,
   updateAnalysis,
   updateTimer,
+  navigateToMove,
+  navigatePrevious,
+  navigateNext,
+  navigateToLive,
+  updateNavigationPermissions,
   undoToMove,
 } = gameSlice.actions;
 

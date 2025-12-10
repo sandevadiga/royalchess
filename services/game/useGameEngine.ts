@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import { useAppDispatch, useAppSelector } from '../hooks';
-import { startNewGame } from './gameSlice';
+import { startNewGame, migrateGameState, undoToMove } from './gameSlice';
 import { handlePlayerMove, handleComputerMove, handleTimerTick, GameEngineConfig } from './gameEngine';
 import { getTimeControl, TimeControlType, GameResult } from '../../utils/gameRules';
 
@@ -28,6 +28,9 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
   
   // Initialize game
   useEffect(() => {
+    // Ensure navigation state exists (migration)
+    dispatch(migrateGameState());
+    
     const timeConfig = getTimeControl(timeControl);
     dispatch(startNewGame({
       playerColor,
@@ -38,7 +41,7 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
   }, []);
   
   // Game engine config
-  const engineConfig: GameEngineConfig = {
+  const engineConfig: GameEngineConfig = useMemo(() => ({
     chess,
     dispatch,
     playerColor,
@@ -47,7 +50,7 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
       initial: game.current.timeControl.initial,
       increment: game.current.timeControl.increment
     }
-  };
+  }), [chess, dispatch, playerColor, difficulty, game.current.timeControl.initial, game.current.timeControl.increment]);
   
   // Handle game end
   const onGameEnd = useCallback((result: GameResult) => {
@@ -62,6 +65,12 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
     console.log('🎮 Player Move:', { moveInput, gameEnded, turn: chess.turn(), playerColor });
     if (gameEnded) return;
     if (chess.turn() !== playerColor.charAt(0)) return;
+    
+    // Only allow moves at live position
+    if (!game.navigation?.isLivePosition) {
+      console.log('❌ Player move blocked: not at live position');
+      return;
+    }
     
     handlePlayerMove(
       engineConfig,
@@ -79,7 +88,57 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
       },
       onGameEnd
     );
-  }, [chess, gameEnded, playerColor, engineConfig, onGameEnd]);
+  }, [chess, gameEnded, playerColor, engineConfig, onGameEnd, game.navigation?.isLivePosition]);
+  
+  // Sync chess engine with navigation state
+  useEffect(() => {
+    if (!game.navigation) return;
+    
+    const moves = game.current.moves;
+    const navIndex = game.navigation.currentMoveIndex;
+    const isLive = game.navigation.isLivePosition;
+    
+    // Determine which moves to replay
+    const movesToReplay = navIndex === -1 ? [] : moves.slice(0, navIndex + 1);
+    
+    // Rebuild position
+    const newChess = new Chess();
+    let newCaptured = { white: [], black: [] };
+    
+    try {
+      for (const move of movesToReplay) {
+        const result = newChess.move({ from: move.from, to: move.to, promotion: move.promotion });
+        if (!result) {
+          console.error('❌ Invalid move during sync, resetting game');
+          chess.reset();
+          setFen(chess.fen());
+          setCapturedPieces({ white: [], black: [] });
+          setLastMove(null);
+          return;
+        }
+        if (result.captured) {
+          newCaptured[result.color === 'w' ? 'black' : 'white'].push(result.captured);
+        }
+      }
+      
+      const newFen = newChess.fen();
+      // Always sync the chess engine to match the current position
+      console.log('🔄 Syncing to position:', navIndex, 'FEN:', newFen);
+      chess.load(newFen);
+      setFen(newFen);
+      setCapturedPieces(newCaptured);
+      setLastMove(movesToReplay.length > 0 ? 
+        { from: movesToReplay[movesToReplay.length - 1].from, to: movesToReplay[movesToReplay.length - 1].to } : 
+        null
+      );
+    } catch (error) {
+      console.error('❌ Sync failed, resetting:', error);
+      chess.reset();
+      setFen(chess.fen());
+      setCapturedPieces({ white: [], black: [] });
+      setLastMove(null);
+    }
+  }, [game.current.moves, game.navigation?.currentMoveIndex, game.navigation?.isLivePosition]);
   
   // Handle computer move
   useEffect(() => {
@@ -88,7 +147,8 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
       status: game.current.status, 
       chessTurn: chess.turn(), 
       playerColor,
-      fen 
+      isLivePosition: game.navigation?.isLivePosition,
+      movesLength: game.current.moves.length
     });
     
     if (gameEnded) {
@@ -97,6 +157,12 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
     }
     if (game.current.status !== 'playing') {
       console.log('❌ Computer move blocked: status not playing');
+      return;
+    }
+    
+    // Only allow computer moves at live position
+    if (!game.navigation?.isLivePosition) {
+      console.log('❌ Computer move blocked: not at live position');
       return;
     }
     
@@ -132,7 +198,9 @@ export const useGameEngine = ({ playerColor, difficulty, timeControl }: UseGameE
     } else {
       console.log('⏸️ Not computer turn, waiting for player...');
     }
-  }, [fen, game.current.status, gameEnded, playerColor, difficulty, engineConfig, onGameEnd]);
+  }, [fen, game.current.status, gameEnded, playerColor, difficulty, engineConfig, onGameEnd, game.navigation?.isLivePosition, game.current.moves.length]);
+  
+
   
   // Timer - use ref to get fresh state
   const gameStateRef = useRef(game.current);
