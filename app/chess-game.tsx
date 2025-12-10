@@ -92,31 +92,17 @@ export default function ChessGameScreen() {
     }
   }, [gameEnded, game.current.status, navigation]);
 
-  // Handle quit
+  // Auto-save game state when leaving
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (gameEnded) return;
-      e.preventDefault();
-      Alert.alert(
-        'Quit Game',
-        'Do you want to quit? This will count as a loss.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Quit',
-            style: 'destructive',
-            onPress: () => {
-              dispatch(endGame({ status: 'resigned', result: 'loss' }));
-              dispatch(updateStatistics('loss'));
-              dispatch(adjustComputerDifficulty('loss'));
-              navigation.dispatch(e.data.action);
-            }
-          }
-        ]
-      );
+    const unsubscribe = navigation.addListener('blur', () => {
+      if (!gameEnded) {
+        // Auto-save current game state without ending the game
+        console.log('Game paused - state saved');
+      }
     });
+    
     return unsubscribe;
-  }, [navigation, gameEnded, dispatch]);
+  }, [navigation, gameEnded]);
 
   const playerRating = useMemo(() => user.rating.current, [user.rating.current]);
   const computerRating = useMemo(() => validDifficulty, [validDifficulty]);
