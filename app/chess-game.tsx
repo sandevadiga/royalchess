@@ -174,26 +174,17 @@ export default function ChessGameScreen() {
 
   const handleNavigateNext = useCallback(() => {
     if (canNavigate) {
-      // For computer games during play, use undoToMove for actual undo
-      if (game.current.opponentType === 'computer' && game.current.status === 'playing') {
-        const targetIndex = Math.min(maxMoveIndex, currentNavIndex + 1);
-        dispatch(undoToMove(targetIndex));
-      } else {
-        dispatch(navigateNext());
-      }
+      // Always use regular navigation for redo (going forward)
+      dispatch(navigateNext());
     }
-  }, [canNavigate, dispatch, game.current.opponentType, game.current.status, currentNavIndex, maxMoveIndex]);
+  }, [canNavigate, dispatch]);
 
   const handleNavigateToLive = useCallback(() => {
     if (canNavigate) {
-      // For computer games during play, use undoToMove to go to live position
-      if (game.current.opponentType === 'computer' && game.current.status === 'playing') {
-        dispatch(undoToMove(maxMoveIndex));
-      } else {
-        dispatch(navigateToLive());
-      }
+      // Always use regular navigation to go to live position
+      dispatch(navigateToLive());
     }
-  }, [canNavigate, dispatch, game.current.opponentType, game.current.status, maxMoveIndex]);
+  }, [canNavigate, dispatch]);
 
   // Ensure navigation state exists and update permissions
   useEffect(() => {

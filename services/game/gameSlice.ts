@@ -155,6 +155,12 @@ const gameSlice = createSlice({
           state.current.moves = [];
         }
         
+        // If not at live position, truncate moves from current position
+        if (!state.navigation.isLivePosition) {
+          const currentIndex = state.navigation.currentMoveIndex;
+          state.current.moves = currentIndex === -1 ? [] : state.current.moves.slice(0, currentIndex + 1);
+        }
+        
         state.current.moves.push(action.payload);
         state.current.turn = state.current.turn === 'white' ? 'black' : 'white';
         
